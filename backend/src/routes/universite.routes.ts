@@ -1,0 +1,34 @@
+import { Router } from 'express';
+import * as univController from '../controllers/universite.controller';
+import { asyncHandler } from '../utils/asyncHandler';
+import { validate } from '../middlewares/validate.middleware';
+import { authenticate } from '../middlewares/auth.middleware';
+import { requireRole } from '../middlewares/roles.middleware';
+import { motifSchema } from '../validators/universite.validators';
+
+const router = Router();
+
+// Toutes les routes université nécessitent d'être authentifié en tant qu'université
+router.use(authenticate, requireRole('universite'));
+
+/** PATCH /api/v1/universite/professeurs/:id/valider */
+router.patch(
+  '/professeurs/:id/valider',
+  asyncHandler(univController.validerProfesseur)
+);
+
+/** PATCH /api/v1/universite/professeurs/:id/rejeter */
+router.patch(
+  '/professeurs/:id/rejeter',
+  validate(motifSchema),
+  asyncHandler(univController.rejeterProfesseur)
+);
+
+/** PATCH /api/v1/universite/professeurs/:id/suspendre */
+router.patch(
+  '/professeurs/:id/suspendre',
+  validate(motifSchema),
+  asyncHandler(univController.suspendreProfesseur)
+);
+
+export default router;

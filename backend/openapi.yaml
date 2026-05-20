@@ -1,0 +1,1641 @@
+openapi: 3.0.3
+info:
+  title: LibraFlow V2 API
+  description: |
+    API du réseau académique national LibraFlow V2.
+    **Hiérarchie** : Ministère → Université → Professeur → Étudiant
+    
+    **Auth** : Bearer JWT dans le header `Authorization`.
+    Access token : 15 min. Refresh token : 7 jours.
+  version: 1.0.0
+  contact:
+    name: Coders Pro
+    email: codeurspro@gmail.com
+
+servers:
+  - url: https://api.libraflow.bf/api/v1
+    description: Production
+  - url: https://api-staging.libraflow.bf/api/v1
+    description: Staging
+  - url: http://localhost:4000/api/v1
+    description: Local
+
+tags:
+  - name: health
+  - name: auth
+  - name: ministere
+  - name: universite
+  - name: professeur
+  - name: etudiant
+  - name: publications
+  - name: interactions
+  - name: notifications
+  - name: public
+
+# ============================================================
+# SECURITY SCHEMES
+# ============================================================
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  # ============================================================
+  # SCHEMAS RÉUTILISABLES
+  # ============================================================
+  schemas:
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:    { type: string, example: "UNAUTHORIZED" }
+            message: { type: string, example: "Token invalide ou expiré" }
+            details: { type: object }
+
+    Pagination:
+      type: object
+      properties:
+        data:  { type: array, items: {} }
+        total: { type: integer }
+        page:  { type: integer }
+        limit: { type: integer }
+        cursor_next: { type: string, nullable: true }
+
+    Universite:
+      type: object
+      properties:
+        id:                 { type: string, format: uuid }
+        nom_officiel:       { type: string }
+        adresse:            { type: string }
+        email:              { type: string, format: email }
+        logo_url:           { type: string, nullable: true }
+        nom_administrateur: { type: string }
+        numero_agrement:    { type: string, nullable: true }
+        region:             { type: string }
+        latitude:           { type: number, nullable: true }
+        longitude:          { type: number, nullable: true }
+        statut:             { type: string, enum: [en_attente, approuvee, rejetee, suspendue] }
+        created_at:         { type: string, format: date-time }
+
+    Professeur:
+      type: object
+      properties:
+        id:            { type: string, format: uuid }
+        universite_id: { type: string, format: uuid }
+        nom_complet:   { type: string }
+        email_pro:     { type: string, format: email }
+        photo_url:     { type: string, nullable: true }
+        matieres:      { type: array, items: { type: string } }
+        statut:        { type: string, enum: [en_attente, actif, rejete, suspendu] }
+        created_at:    { type: string, format: date-time }
+
+    Etudiant:
+      type: object
+      properties:
+        id:            { type: string, format: uuid }
+        universite_id: { type: string, format: uuid }
+        numero_ine:    { type: string }
+        nom_complet:   { type: string }
+        photo_url:     { type: string, nullable: true }
+        statut:        { type: string, enum: [actif, suspendu] }
+        created_at:    { type: string, format: date-time }
+
+    Publication:
+      type: object
+      properties:
+        id:                    { type: string, format: uuid }
+        titre:                 { type: string }
+        matiere:               { type: string }
+        niveau:                { type: string, enum: [L1, L2, L3, M1, M2, Doctorat, BTS, Autre] }
+        type_doc:              { type: string, enum: [cours, td, annales, resume, autre] }
+        description:           { type: string, nullable: true }
+        pdf_url:               { type: string }
+        pdf_pages_count:       { type: integer, nullable: true }
+        resume_ia:             { type: string, nullable: true }
+        score_fiabilite:       { type: integer, minimum: 0, maximum: 100, nullable: true }
+        statut_moderation:     { type: string, enum: [en_analyse, validee, signalee, rejetee] }
+        vues_count:            { type: integer }
+        likes_count:           { type: integer }
+        telechargements_count: { type: integer }
+        commentaires_count:    { type: integer }
+        professeur:
+          type: object
+          properties:
+            id:         { type: string, format: uuid }
+            nom_complet:{ type: string }
+            photo_url:  { type: string, nullable: true }
+        universite:
+          type: object
+          properties:
+            id:          { type: string, format: uuid }
+            nom_officiel:{ type: string }
+            logo_url:    { type: string, nullable: true }
+        is_liked:    { type: boolean }
+        is_saved:    { type: boolean }
+        created_at:  { type: string, format: date-time }
+
+    Commentaire:
+      type: object
+      properties:
+        id:             { type: string, format: uuid }
+        publication_id: { type: string, format: uuid }
+        user_id:        { type: string, format: uuid }
+        user_role:      { type: string }
+        user_nom:       { type: string }
+        user_photo:     { type: string, nullable: true }
+        contenu:        { type: string }
+        parent_id:      { type: string, format: uuid, nullable: true }
+        created_at:     { type: string, format: date-time }
+
+    Notification:
+      type: object
+      properties:
+        id:       { type: string, format: uuid }
+        type:     { type: string }
+        titre:    { type: string }
+        message:  { type: string }
+        lien:     { type: string, nullable: true }
+        lu:       { type: boolean }
+        created_at: { type: string, format: date-time }
+
+    AuthResponse:
+      type: object
+      properties:
+        access_token:  { type: string }
+        refresh_token: { type: string }
+        expires_in:    { type: integer, description: "secondes", example: 900 }
+        user:
+          type: object
+          properties:
+            id:   { type: string, format: uuid }
+            role: { type: string, enum: [ministere, universite, professeur, etudiant] }
+            nom:  { type: string }
+
+# ============================================================
+# PATHS
+# ============================================================
+paths:
+
+  # ----------------------------------------------------------
+  # HEALTH
+  # ----------------------------------------------------------
+  /health:
+    get:
+      tags: [health]
+      summary: Statut de l'API
+      security: []
+      responses:
+        '200':
+          description: API opérationnelle
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:        { type: string, example: ok }
+                  uptime:        { type: number }
+                  db_connected:  { type: boolean }
+                  redis_connected: { type: boolean }
+
+  # ----------------------------------------------------------
+  # AUTH
+  # ----------------------------------------------------------
+  /auth/verify-ine/{ine}:
+    get:
+      tags: [auth]
+      summary: Vérifier un numéro INE via API Campus Faso
+      security: []
+      parameters:
+        - name: ine
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: INE vérifié
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valid:       { type: boolean }
+                  nom_complet: { type: string }
+        '404':
+          description: INE non trouvé
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '503':
+          description: API Campus Faso indisponible (mode dégradé)
+
+  /auth/register/etudiant:
+    post:
+      tags: [auth]
+      summary: Inscription étudiant
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [numero_ine, universite_id, password]
+              properties:
+                numero_ine:    { type: string, example: "BF2024001234" }
+                universite_id: { type: string, format: uuid }
+                password:      { type: string, minLength: 8 }
+      responses:
+        '201':
+          description: Compte créé
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResponse' }
+        '400':
+          description: INE invalide ou déjà utilisé
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '409':
+          description: Compte déjà existant
+
+  /auth/register/professeur:
+    post:
+      tags: [auth]
+      summary: Inscription professeur (compte en attente de validation)
+      security: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [nom_complet, email_pro, universite_id, matieres, password]
+              properties:
+                nom_complet:    { type: string }
+                email_pro:      { type: string, format: email }
+                universite_id:  { type: string, format: uuid }
+                matieres:       { type: string, description: "JSON array: [\"Maths\",\"Physique\"]" }
+                password:       { type: string, minLength: 8 }
+                photo:          { type: string, format: binary }
+      responses:
+        '201':
+          description: Compte créé, en attente de validation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: "Votre compte est en attente de validation par votre université." }
+                  id:      { type: string, format: uuid }
+        '409':
+          description: Email déjà utilisé
+
+  /auth/register/universite:
+    post:
+      tags: [auth]
+      summary: Inscription université (compte en attente d'approbation ministère)
+      security: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [nom_officiel, adresse, email, nom_administrateur, password, logo]
+              properties:
+                nom_officiel:       { type: string }
+                adresse:            { type: string }
+                email:              { type: string, format: email }
+                nom_administrateur: { type: string }
+                password:           { type: string, minLength: 8 }
+                numero_agrement:    { type: string }
+                region:             { type: string }
+                latitude:           { type: number }
+                longitude:          { type: number }
+                logo:               { type: string, format: binary }
+      responses:
+        '201':
+          description: Demande transmise au Ministère
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  id:      { type: string, format: uuid }
+
+  /auth/login:
+    post:
+      tags: [auth]
+      summary: Connexion unifiée (les 4 rôles)
+      description: |
+        Identifiant auto-détecté : INE → étudiant, email → prof/université/ministère.
+        Rôle détecté automatiquement par la BDD.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [identifiant, password]
+              properties:
+                identifiant: { type: string, description: "INE ou email" }
+                password:    { type: string }
+      responses:
+        '200':
+          description: Connexion réussie
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResponse' }
+        '401':
+          description: Identifiants incorrects
+        '403':
+          description: Compte en attente ou suspendu
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:    { type: string, example: "ACCOUNT_PENDING" }
+                      message: { type: string }
+                      motif:   { type: string, nullable: true }
+
+  /auth/refresh:
+    post:
+      tags: [auth]
+      summary: Rafraîchir l'access token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refresh_token]
+              properties:
+                refresh_token: { type: string }
+      responses:
+        '200':
+          description: Nouveau token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token: { type: string }
+                  expires_in:   { type: integer }
+        '401':
+          description: Refresh token invalide ou révoqué
+
+  /auth/logout:
+    post:
+      tags: [auth]
+      summary: Déconnexion (révocation refresh token)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refresh_token]
+              properties:
+                refresh_token: { type: string }
+      responses:
+        '204':
+          description: Déconnecté
+
+  /me:
+    get:
+      tags: [auth]
+      summary: Profil de l'utilisateur connecté (selon rôle)
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Profil retourné selon le rôle JWT
+    patch:
+      tags: [auth]
+      summary: Modifier son profil
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                nom_complet: { type: string }
+                matieres:    { type: string }
+                photo:       { type: string, format: binary }
+      responses:
+        '200':
+          description: Profil mis à jour
+
+  /me/password:
+    post:
+      tags: [auth]
+      summary: Changer son mot de passe
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [current_password, new_password]
+              properties:
+                current_password: { type: string }
+                new_password:     { type: string, minLength: 8 }
+      responses:
+        '204':
+          description: Mot de passe changé
+        '401':
+          description: Mot de passe actuel incorrect
+
+  # ----------------------------------------------------------
+  # MINISTÈRE
+  # ----------------------------------------------------------
+  /ministere/dashboard:
+    get:
+      tags: [ministere]
+      summary: Dashboard national (stats globales + carte)
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Stats nationales
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  universites_actives:   { type: integer }
+                  universites_en_attente:{ type: integer }
+                  professeurs_actifs:    { type: integer }
+                  etudiants_inscrits:    { type: integer }
+                  documents_publies:     { type: integer }
+                  total_vues:            { type: integer }
+                  total_telechargements: { type: integer }
+                  evolution_mensuelle:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        mois:                 { type: string }
+                        nouvelles_publications:{ type: integer }
+                        cumul:                { type: integer }
+                  carte:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:          { type: string, format: uuid }
+                        nom_officiel:{ type: string }
+                        latitude:    { type: number }
+                        longitude:   { type: number }
+                        stats:
+                          type: object
+                          properties:
+                            etudiants:    { type: integer }
+                            professeurs:  { type: integer }
+                            publications: { type: integer }
+
+  /ministere/universites:
+    get:
+      tags: [ministere]
+      summary: Liste toutes les universités
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: statut
+          in: query
+          schema: { type: string, enum: [en_attente, approuvee, rejetee, suspendue] }
+        - name: region
+          in: query
+          schema: { type: string }
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20 }
+      responses:
+        '200':
+          description: Liste paginée
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Pagination' }
+
+  /ministere/universites/{id}/dossier:
+    get:
+      tags: [ministere]
+      summary: Dossier complet d'une université en attente
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Dossier complet
+
+  /ministere/universites/{id}/approuver:
+    patch:
+      tags: [ministere]
+      summary: Approuver une université
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message: { type: string, description: "Message explicatif optionnel" }
+      responses:
+        '200':
+          description: Université approuvée, notification envoyée
+
+  /ministere/universites/{id}/rejeter:
+    patch:
+      tags: [ministere]
+      summary: Rejeter une université
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [motif]
+              properties:
+                motif: { type: string }
+      responses:
+        '200':
+          description: Université rejetée
+
+  /ministere/universites/{id}/suspendre:
+    patch:
+      tags: [ministere]
+      summary: Suspendre une université
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [motif]
+              properties:
+                motif: { type: string }
+      responses:
+        '200':
+          description: Université suspendue
+
+  /ministere/universites/{id}/reactiver:
+    patch:
+      tags: [ministere]
+      summary: Réactiver une université suspendue
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Université réactivée
+
+  /ministere/statistiques:
+    get:
+      tags: [ministere]
+      summary: Statistiques nationales détaillées
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Stats détaillées
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  top_universites:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        universite: { $ref: '#/components/schemas/Universite' }
+                        publications_count: { type: integer }
+                  top_matieres:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        matiere:{ type: string }
+                        count:  { type: integer }
+                  top_documents:
+                    type: array
+                    items: { $ref: '#/components/schemas/Publication' }
+                  repartition_regions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        region:               { type: string }
+                        universites_count:    { type: integer }
+                        taux_adoption:        { type: number }
+
+  /ministere/signalements:
+    get:
+      tags: [ministere]
+      summary: Liste des contenus signalés
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: statut
+          in: query
+          schema: { type: string, enum: [en_attente, supprime, innocente, averti] }
+      responses:
+        '200':
+          description: Liste des signalements
+
+  /ministere/signalements/{id}/supprimer:
+    patch:
+      tags: [ministere]
+      summary: Supprimer définitivement un contenu signalé
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Contenu supprimé, université avertie
+
+  /ministere/signalements/{id}/innocenter:
+    patch:
+      tags: [ministere]
+      summary: Innocenter un contenu (signalement erroné)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Document réhabilité
+
+  /ministere/signalements/{id}/avertir:
+    patch:
+      tags: [ministere]
+      summary: Avertir l'université sans supprimer le contenu
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [message]
+              properties:
+                message: { type: string }
+      responses:
+        '200':
+          description: Avertissement envoyé
+
+  # ----------------------------------------------------------
+  # UNIVERSITÉ
+  # ----------------------------------------------------------
+  /universite/dashboard:
+    get:
+      tags: [universite]
+      summary: Dashboard de l'université
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Stats université
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  etudiants_count:          { type: integer }
+                  professeurs_actifs_count: { type: integer }
+                  publications_count:       { type: integer }
+                  total_vues:               { type: integer }
+                  total_telechargements:    { type: integer }
+                  total_likes:              { type: integer }
+                  evolution_mensuelle:      { type: array, items: {} }
+                  top_professeurs:
+                    type: array
+                    maxItems: 3
+                    items: { $ref: '#/components/schemas/Professeur' }
+                  top_documents:
+                    type: array
+                    maxItems: 3
+                    items: { $ref: '#/components/schemas/Publication' }
+
+  /universite/professeurs:
+    get:
+      tags: [universite]
+      summary: Liste des professeurs de l'université
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: statut
+          in: query
+          schema: { type: string, enum: [en_attente, actif, suspendu, rejete] }
+      responses:
+        '200':
+          description: Liste
+
+  /universite/professeurs/{id}/valider:
+    patch:
+      tags: [universite]
+      summary: Valider un professeur en attente
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Professeur validé, notification envoyée
+
+  /universite/professeurs/{id}/rejeter:
+    patch:
+      tags: [universite]
+      summary: Rejeter un professeur
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [motif]
+              properties:
+                motif: { type: string }
+      responses:
+        '200':
+          description: Professeur rejeté
+
+  /universite/professeurs/{id}/suspendre:
+    patch:
+      tags: [universite]
+      summary: Suspendre un professeur actif
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [motif]
+              properties:
+                motif: { type: string }
+      responses:
+        '200':
+          description: Professeur suspendu
+
+  /universite/etudiants:
+    get:
+      tags: [universite]
+      summary: Liste des étudiants de l'université
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Liste
+
+  /universite/etudiants/{id}/suspendre:
+    patch:
+      tags: [universite]
+      summary: Suspendre un étudiant
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [motif]
+              properties:
+                motif: { type: string }
+      responses:
+        '200':
+          description: Étudiant suspendu
+
+  /universite/publications:
+    get:
+      tags: [universite]
+      summary: Toutes les publications de l'université
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: matiere
+          in: query
+          schema: { type: string }
+        - name: professeur_id
+          in: query
+          schema: { type: string, format: uuid }
+        - name: date_from
+          in: query
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Liste
+
+  /universite/publications/{id}:
+    delete:
+      tags: [universite]
+      summary: Supprimer une publication (supervision)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Publication supprimée
+
+  # ----------------------------------------------------------
+  # PUBLICATIONS (partagé)
+  # ----------------------------------------------------------
+  /publications:
+    post:
+      tags: [publications]
+      summary: Publier un document (professeur uniquement)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [titre, matiere, niveau, type_doc, fichier]
+              properties:
+                titre:       { type: string }
+                matiere:     { type: string }
+                niveau:      { type: string, enum: [L1, L2, L3, M1, M2, Doctorat, BTS, Autre] }
+                type_doc:    { type: string, enum: [cours, td, annales, resume, autre] }
+                description: { type: string }
+                fichier:     { type: string, format: binary, description: "PDF ou Word, max 50MB" }
+      responses:
+        '202':
+          description: Document reçu, analyse IA en cours
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:      { type: string, format: uuid }
+                  statut:  { type: string, example: en_analyse }
+                  message: { type: string, example: "Analyse en cours, vous serez notifié du résultat." }
+        '400':
+          description: Fichier invalide (type ou taille)
+        '403':
+          description: Compte professeur non validé
+
+  /publications/search:
+    get:
+      tags: [publications]
+      summary: Recherche de publications
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: q
+          in: query
+          schema: { type: string }
+        - name: universite_id
+          in: query
+          schema: { type: string, format: uuid }
+        - name: matiere
+          in: query
+          schema: { type: string }
+        - name: niveau
+          in: query
+          schema: { type: string }
+        - name: type_doc
+          in: query
+          schema: { type: string }
+        - name: date_from
+          in: query
+          schema: { type: string, format: date }
+        - name: date_to
+          in: query
+          schema: { type: string, format: date }
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20 }
+      responses:
+        '200':
+          description: Résultats de recherche
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Pagination' }
+
+  /publications/{id}:
+    get:
+      tags: [publications]
+      summary: Détail d'une publication (incrémente les vues)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Publication détaillée
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Publication' }
+        '404':
+          description: Non trouvée
+    patch:
+      tags: [publications]
+      summary: Modifier une publication (auteur uniquement)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                titre:       { type: string }
+                description: { type: string }
+      responses:
+        '200':
+          description: Publication modifiée
+        '403':
+          description: Non autorisé (pas l'auteur)
+    delete:
+      tags: [publications]
+      summary: Supprimer une publication (auteur ou université/ministère)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Supprimée
+
+  /publications/{id}/download:
+    get:
+      tags: [publications]
+      summary: Obtenir un lien de téléchargement signé (1h)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: URL signée
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  download_url: { type: string }
+                  expires_in:   { type: integer, example: 3600 }
+
+  /publications/{id}/tts:
+    post:
+      tags: [publications]
+      summary: Générer ou récupérer l'audio Text-to-Speech
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Audio disponible (déjà généré)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  audio_url: { type: string }
+        '202':
+          description: Génération en cours (première fois)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: "Audio en cours de génération (30s environ)." }
+
+  /publications/{id}/ask:
+    post:
+      tags: [publications]
+      summary: Poser une question sur un document (chatbot IA)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [question]
+              properties:
+                question: { type: string }
+      responses:
+        '200':
+          description: Réponse IA
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reponse: { type: string }
+        '429':
+          description: Limite de questions atteinte (20/h)
+
+  /publications/{id}/signaler:
+    post:
+      tags: [publications]
+      summary: Signaler une publication
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [motif]
+              properties:
+                motif:       { type: string, enum: [inapproprie, plagiat, erreur_grave, hors_sujet, autre] }
+                description: { type: string }
+      responses:
+        '201':
+          description: Signalement enregistré
+
+  /publications/{id}/share:
+    post:
+      tags: [publications]
+      summary: Générer un lien de partage public (7 jours)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '201':
+          description: Lien de partage généré
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  share_url:  { type: string }
+                  expires_at: { type: string, format: date-time }
+
+  # ----------------------------------------------------------
+  # FEED
+  # ----------------------------------------------------------
+  /feed:
+    get:
+      tags: [etudiant, professeur]
+      summary: Fil d'actualité (cursor-based pagination)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: cursor
+          in: query
+          schema: { type: string, description: "ISO date-time du dernier élément reçu" }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20, maximum: 50 }
+      responses:
+        '200':
+          description: Publications du fil
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:        { type: array, items: { $ref: '#/components/schemas/Publication' } }
+                  cursor_next: { type: string, nullable: true }
+                  has_more:    { type: boolean }
+
+  # ----------------------------------------------------------
+  # INTERACTIONS
+  # ----------------------------------------------------------
+  /publications/{id}/like:
+    post:
+      tags: [interactions]
+      summary: Liker une publication
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '201':
+          description: Liké
+        '409':
+          description: Déjà liké
+    delete:
+      tags: [interactions]
+      summary: Retirer son like
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Like retiré
+
+  /publications/{id}/comments:
+    get:
+      tags: [interactions]
+      summary: Commentaires d'une publication
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: cursor
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Liste des commentaires
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/Commentaire' } }
+    post:
+      tags: [interactions]
+      summary: Poster un commentaire
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [contenu]
+              properties:
+                contenu:   { type: string, minLength: 1, maxLength: 1000 }
+                parent_id: { type: string, format: uuid, description: "Pour une réponse à un commentaire" }
+      responses:
+        '201':
+          description: Commentaire posté
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Commentaire' }
+
+  /comments/{id}:
+    delete:
+      tags: [interactions]
+      summary: Supprimer son commentaire
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Commentaire supprimé
+
+  /publications/{id}/save:
+    post:
+      tags: [interactions]
+      summary: Sauvegarder une publication
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '201':
+          description: Sauvegardé
+    delete:
+      tags: [interactions]
+      summary: Retirer des favoris
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Retiré
+
+  /follow/professeur/{id}:
+    post:
+      tags: [interactions]
+      summary: Suivre un professeur
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '201':
+          description: Abonné
+    delete:
+      tags: [interactions]
+      summary: Se désabonner d'un professeur
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Désabonné
+
+  /follow/universite/{id}:
+    post:
+      tags: [interactions]
+      summary: Suivre une université
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '201':
+          description: Abonné
+    delete:
+      tags: [interactions]
+      summary: Se désabonner d'une université
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Désabonné
+
+  # ----------------------------------------------------------
+  # NOTIFICATIONS
+  # ----------------------------------------------------------
+  /notifications:
+    get:
+      tags: [notifications]
+      summary: Mes notifications
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: lu
+          in: query
+          schema: { type: boolean }
+        - name: cursor
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Liste
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:        { type: array, items: { $ref: '#/components/schemas/Notification' } }
+                  unread_count:{ type: integer }
+
+  /notifications/unread/count:
+    get:
+      tags: [notifications]
+      summary: Nombre de notifications non lues
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count: { type: integer }
+
+  /notifications/{id}/read:
+    patch:
+      tags: [notifications]
+      summary: Marquer une notification comme lue
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Marquée lue
+
+  /notifications/read-all:
+    patch:
+      tags: [notifications]
+      summary: Tout marquer comme lu
+      security:
+        - BearerAuth: []
+      responses:
+        '204':
+          description: Toutes marquées lues
+
+  # ----------------------------------------------------------
+  # PUBLIC (sans auth)
+  # ----------------------------------------------------------
+  /public/universites:
+    get:
+      tags: [public]
+      summary: Liste des universités approuvées (sans auth)
+      security: []
+      responses:
+        '200':
+          description: Liste
+
+  /public/universites/{id}:
+    get:
+      tags: [public]
+      summary: Profil public d'une université
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Profil + stats publiques
+
+  /public/professeurs/{id}:
+    get:
+      tags: [public]
+      summary: Profil public d'un professeur
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Profil + publications
+
+  /share/{token}:
+    get:
+      tags: [public]
+      summary: Accéder à un document via lien de partage (sans compte)
+      security: []
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Document accessible
+        '404':
+          description: Lien invalide ou expiré
+
+  # ----------------------------------------------------------
+  # OFFLINE SYNC
+  # ----------------------------------------------------------
+  /sync/pending-actions:
+    post:
+      tags: [etudiant, professeur]
+      summary: Synchroniser les actions effectuées offline
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                actions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:             { type: string, enum: [like, unlike, comment, follow, unfollow, save, unsave, history_update] }
+                      payload:          { type: object }
+                      client_timestamp: { type: string, format: date-time }
+      responses:
+        '200':
+          description: Résultat traitement
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  processed: { type: array, items: { type: string } }
+                  failed:    { type: array, items: { type: object } }
+
+  /offline/feed-pack:
+    get:
+      tags: [etudiant]
+      summary: Pack offline (métadonnées légères des publications récentes)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: since
+          in: query
+          schema: { type: string, format: date-time }
+      responses:
+        '200':
+          description: Pack de publications pour cache offline
+
+  # ----------------------------------------------------------
+  # RECOMMANDATIONS IA
+  # ----------------------------------------------------------
+  /me/recommendations:
+    get:
+      tags: [etudiant]
+      summary: Recommandations personnalisées (IA)
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Publications recommandées
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/Publication' } }
+
+  /me/library:
+    get:
+      tags: [etudiant]
+      summary: Bibliothèque personnelle (favoris + téléchargés + historique)
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Bibliothèque
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  favoris:     { type: array, items: { $ref: '#/components/schemas/Publication' } }
+                  telecharges: { type: array, items: { $ref: '#/components/schemas/Publication' } }
+                  historique:  { type: array, items: { $ref: '#/components/schemas/Publication' } }
+
+  /me/publications:
+    get:
+      tags: [professeur]
+      summary: Mes publications avec stats
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Liste avec stats
+
+  /me/community:
+    get:
+      tags: [professeur]
+      summary: Ma communauté (abonnés + interactions récentes)
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Communauté
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  abonnes:             { type: array, items: {} }
+                  total_abonnes:       { type: integer }
+                  commentaires_recents:{ type: array, items: { $ref: '#/components/schemas/Commentaire' } }
+                  likes_recents:       { type: array, items: {} }
