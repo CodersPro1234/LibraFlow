@@ -41,3 +41,11 @@ const App = () => {
 }
 
 export default App
+
+
+import PublishPage from './pages/professeur/PublishPage'
+
+// Dans le bloc Professeur :
+<Route element={<AppLayout title="Publier un document" />}>
+  <Route path="/professeur/publier" element={<PublishPage />} />
+</Route>
