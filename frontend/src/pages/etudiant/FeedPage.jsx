@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 const publications = [
   {
@@ -65,10 +66,15 @@ const ScoreBadge = ({ score }) => {
 }
 
 const FeedPage = () => {
+  const navigate = useNavigate()
   const [likes, setLikes] = useState({})
+  const [shared, setShared] = useState({})
 
-  const toggleLike = (id, base) => {
-    setLikes((prev) => ({ ...prev, [id]: !prev[id] }))
+  const toggleLike = (id) => setLikes(prev => ({ ...prev, [id]: !prev[id] }))
+
+  const handleShare = (id) => {
+    setShared(prev => ({ ...prev, [id]: true }))
+    setTimeout(() => setShared(prev => ({ ...prev, [id]: false })), 2000)
   }
 
   return (
@@ -127,7 +133,9 @@ const FeedPage = () => {
 
           {/* Actions */}
           <div className="flex gap-2 flex-wrap">
-            <button className="text-xs px-3 py-1.5 rounded-lg text-white font-medium"
+            <button
+              onClick={() => navigate(`/etudiant/lecture/${pub.id}`)}
+              className="text-xs px-3 py-1.5 rounded-lg text-white font-medium"
               style={{ background: 'var(--color-primary)' }}>
               📖 Lire
             </button>
@@ -149,7 +157,18 @@ const FeedPage = () => {
               style={{ borderColor: 'var(--color-border)', color: 'var(--color-muted)' }}>
               💬 {pub.commentaires}
             </button>
-            <button className="text-xs px-3 py-1.5 rounded-lg border font-medium"
+            <button
+              onClick={() => handleShare(pub.id)}
+              className="text-xs px-3 py-1.5 rounded-lg border font-medium transition-all"
+              style={{
+                borderColor: shared[pub.id] ? 'var(--color-success)' : 'var(--color-border)',
+                color: shared[pub.id] ? 'var(--color-success)' : 'var(--color-muted)',
+              }}>
+              {shared[pub.id] ? '✓ Partagé' : '🔗 Partager'}
+            </button>
+            <button
+              onClick={() => navigate(`/etudiant/lecture/${pub.id}`)}
+              className="text-xs px-3 py-1.5 rounded-lg border font-medium"
               style={{ borderColor: 'var(--color-border)', color: 'var(--color-muted)' }}>
               🔊 Écouter
             </button>

@@ -4,9 +4,13 @@ import LoginPage from './pages/auth/LoginPage'
 import EtudiantFeed from './pages/etudiant/FeedPage'
 import ProfesseurFeed from './pages/professeur/FeedPage'
 import PublishPage from './pages/professeur/PublishPage'
+import InscriptionPage from './pages/auth/InscriptionPage'
 import BiblioPage from './pages/etudiant/BiblioPage'
 import NotificationsPage from './pages/etudiant/NotificationsPage'
 import EtudiantUniversitesPage from './pages/etudiant/UniversitesPage'
+import LecturePage from './pages/etudiant/LecturePage'
+import ProfilPage from './pages/etudiant/ProfilPage'
+import ProfesseurProfilPage from './pages/etudiant/ProfesseurProfilPage'
 import UniversiteDashboard from './pages/universite/DashboardPage'
 import ProfsPage from './pages/universite/ProfsPage'
 import EtudiantsPage from './pages/universite/EtudiantsPage'
@@ -15,6 +19,7 @@ import MinistereDashboard from './pages/ministere/DashboardPage'
 import UniversitesPage from './pages/ministere/UniversitesPage'
 import SignalesPage from './pages/ministere/SignalesPage'
 import CartePage from './pages/ministere/CartePage'
+import StatistiquesPage from './pages/ministere/StatistiquesPage'
 import MesPublicationsPage from './pages/professeur/MesPublicationsPage'
 import CommunautePage from './pages/professeur/CommunautePage'
 import SearchPage from './pages/etudiant/SearchPage'
@@ -27,6 +32,7 @@ const App = () => {
         {/* Public */}
         <Route path="/" element={<Navigate to="/login" />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/inscription" element={<InscriptionPage />} />
 
         {/* Étudiant */}
         <Route element={<AppLayout title="Fil d'actualité" />}>
@@ -43,6 +49,15 @@ const App = () => {
         </Route>
         <Route element={<AppLayout title="Universités" />}>
           <Route path="/etudiant/universites" element={<EtudiantUniversitesPage />} />
+        </Route>
+        <Route element={<AppLayout title="Lecture" />}>
+          <Route path="/etudiant/lecture/:id" element={<LecturePage />} />
+        </Route>
+        <Route element={<AppLayout title="Mon profil" />}>
+          <Route path="/etudiant/profil" element={<ProfilPage />} />
+        </Route>
+        <Route element={<AppLayout title="Profil professeur" />}>
+          <Route path="/etudiant/professeur/:id" element={<ProfesseurProfilPage />} />
         </Route>
 
         {/* Professeur */}
@@ -85,6 +100,9 @@ const App = () => {
         </Route>
         <Route element={<AppLayout title="Carte nationale" />}>
           <Route path="/ministere/carte" element={<CartePage />} />
+        </Route>
+        <Route element={<AppLayout title="Statistiques nationales" />}>
+          <Route path="/ministere/statistiques" element={<StatistiquesPage />} />
         </Route>
 
       </Routes>

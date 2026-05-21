@@ -8,6 +8,7 @@ const menus = {
     { label: 'Ma bibliothèque', path: '/etudiant/bibliotheque', icon: '🔖' },
     { label: 'Notifications', path: '/etudiant/notifications', icon: '🔔' },
     { label: 'Universités', path: '/etudiant/universites', icon: '🏛' },
+    { label: 'Mon profil', path: '/etudiant/profil', icon: '👤' },
   ],
   professeur: [
     { label: "Fil d'actualité", path: '/professeur/feed', icon: '📋' },

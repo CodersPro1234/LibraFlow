@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import useAuthStore from '../../stores/authStore'
 
 const LoginPage = () => {
@@ -42,6 +42,12 @@ const LoginPage = () => {
           <button onClick={() => handleLogin('ministere')} className="w-full py-2 rounded-lg text-sm font-medium" style={{ background: 'var(--color-danger-light)', color: 'var(--color-danger)' }}>
             Ministère
           </button>
+        </div>
+        <div className="text-center mt-4">
+          <span className="text-xs" style={{ color: 'var(--color-muted)' }}>Pas encore inscrit ? </span>
+          <Link to="/inscription" className="text-xs font-medium" style={{ color: 'var(--color-primary)' }}>
+            Créer un compte
+          </Link>
         </div>
       </div>
     </div>
