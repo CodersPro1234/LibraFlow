@@ -2,7 +2,7 @@ import { Router } from 'express';
 import * as authController from '../controllers/auth.controller';
 import { asyncHandler } from '../utils/asyncHandler';
 import { validate } from '../middlewares/validate.middleware';
-import { uploadPhoto, uploadLogo, handleMulterError } from '../middlewares/upload.middleware';
+import { uploadPhoto, uploadLogo, handleMulterError, validateImageBytes } from '../middlewares/upload.middleware';
 import {
   verifyIneParamsSchema,
   registerEtudiantSchema,
@@ -13,8 +13,13 @@ import {
   logoutSchema,
 } from '../validators/auth.validators';
 import { authenticate } from '../middlewares/auth.middleware';
+import { authLimiter } from '../middlewares/rateLimiter.middleware';
 
 const router = Router();
+
+// Appliquer rate limit strict sur login et refresh (anti brute-force)
+router.use('/login', authLimiter);
+router.use('/refresh', authLimiter);
 
 /** GET /api/v1/auth/verify-ine/:ine — public */
 router.get(
@@ -35,6 +40,7 @@ router.post(
   '/register/professeur',
   uploadPhoto,
   handleMulterError,
+  validateImageBytes,
   validate(registerProfesseurSchema),
   asyncHandler(authController.registerProfesseur)
 );
@@ -44,6 +50,7 @@ router.post(
   '/register/universite',
   uploadLogo,
   handleMulterError,
+  validateImageBytes,
   validate(registerUniversiteSchema),
   asyncHandler(authController.registerUniversite)
 );

@@ -38,4 +38,28 @@ router.patch(
   asyncHandler(minController.reactiverUniversite)
 );
 
+/** GET /api/v1/ministere/dashboard */
+router.get('/dashboard', asyncHandler(minController.getDashboard));
+
+/** GET /api/v1/ministere/universites */
+router.get('/universites', asyncHandler(minController.listUniversites));
+
+/** GET /api/v1/ministere/universites/:id/dossier */
+router.get('/universites/:id/dossier', asyncHandler(minController.getUniversiteDossier));
+
+/** GET /api/v1/ministere/statistiques */
+router.get('/statistiques', asyncHandler(minController.getStatistiques));
+
+/** GET /api/v1/ministere/signalements */
+router.get('/signalements', asyncHandler(minController.listSignalements));
+
+/** DELETE /api/v1/ministere/signalements/:id/supprimer */
+router.delete('/signalements/:id/supprimer', asyncHandler(minController.supprimerSignalement));
+
+/** POST /api/v1/ministere/signalements/:id/innocenter */
+router.post('/signalements/:id/innocenter', asyncHandler(minController.innocenterSignalement));
+
+/** POST /api/v1/ministere/signalements/:id/avertir */
+router.post('/signalements/:id/avertir', asyncHandler(minController.avertirSignalement));
+
 export default router;
