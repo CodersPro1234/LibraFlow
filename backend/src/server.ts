@@ -131,9 +131,11 @@ async function bootstrap(): Promise<void> {
   });
 }
 
-bootstrap().catch((err: unknown) => {
-  logger.error({ err }, 'Échec critique au démarrage');
-  process.exit(1);
-});
+if (require.main === module) {
+  bootstrap().catch((err: unknown) => {
+    logger.error({ err }, 'Échec critique au démarrage');
+    process.exit(1);
+  });
+}
 
 export default app;

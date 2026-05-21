@@ -8,7 +8,7 @@ import * as interactionsRepo from '../repositories/interactions.repository';
 import { moderationQueue, ttsQueue } from '../jobs/queues';
 import { ForbiddenError, NotFoundError, ValidationError } from '../utils/errors';
 import logger from '../utils/logger';
-import type { NiveauPublication, TypeDoc, MotifSignalement } from '../types/db';
+import type { NiveauPublication, TypeDoc, MotifSignalement, PublicationRow, HistoriqueLectureRow } from '../types/db';
 import type { PublicationWithRelations } from '../repositories/publications.repository';
 
 // ── Création / upload ─────────────────────────────────────────────────────────
@@ -349,7 +349,7 @@ export async function getMesPublications(professeurId: string, cursor?: string):
 // ── Recommandations IA ────────────────────────────────────────────────────────
 
 const RECO_CACHE_TTL = 3600; // 1 heure
-const recoKey = (id: string) => `reco:${id}`;
+const recoKey = (id: string): string => `reco:${id}`;
 
 export async function getRecommendations(etudiantId: string): Promise<PublicationWithRelations[]> {
   // Vérifier le cache Redis
@@ -390,13 +390,17 @@ export async function getRecommendations(etudiantId: string): Promise<Publicatio
 
 // ── Pack offline ──────────────────────────────────────────────────────────────
 
-export async function getOfflineFeedPack(since?: string) {
+export async function getOfflineFeedPack(since?: string): Promise<Partial<PublicationRow>[]> {
   return pubRepo.findFeedPackSince(since, 50);
 }
 
 // ── Bibliothèque étudiant ─────────────────────────────────────────────────────
 
-export async function getBibliotheque(etudiantId: string) {
+export async function getBibliotheque(etudiantId: string): Promise<{
+  favoris: PublicationWithRelations[];
+  telecharges: never[];
+  historique: HistoriqueLectureRow[];
+}> {
   const [favoris, historique] = await Promise.all([
     pubRepo.findFavoris(etudiantId),
     pubRepo.findHistoriqueByEtudiant(etudiantId, undefined, 20),

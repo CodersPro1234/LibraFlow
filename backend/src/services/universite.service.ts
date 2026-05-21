@@ -5,6 +5,7 @@ import * as pubRepo from '../repositories/publications.repository';
 import { supabaseAdmin } from '../config/supabase';
 import { ForbiddenError, NotFoundError, ValidationError } from '../utils/errors';
 import logger from '../utils/logger';
+import type { PublicationWithRelations } from '../repositories/publications.repository';
 
 /**
  * Valide un professeur en attente.
@@ -251,7 +252,7 @@ export async function listPublications(params: {
   universiteId: string;
   cursor?: string;
   limit: number;
-}) {
+}): Promise<{ data: PublicationWithRelations[]; cursor_next: string | null; has_more: boolean }> {
   const rows = await pubRepo.findByUniversite(params.universiteId, params.cursor, params.limit);
   const has_more = rows.length > params.limit;
   if (has_more) rows.pop();

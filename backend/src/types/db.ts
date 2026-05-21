@@ -182,13 +182,6 @@ export interface HistoriqueLectureRow {
   created_at: string;
 }
 
-export interface HistoriqueLectureRow {
-  id: string;
-  publication_id: string;
-  etudiant_id: string;
-  created_at: string;
-}
-
 export interface AuditLogRow {
   id: string;
   action: string;

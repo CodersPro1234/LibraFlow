@@ -11,25 +11,27 @@ const mockTokens = {
   expires_in: 900,
 };
 
+const VALID_UUID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
+
 describe('POST /api/v1/auth/login', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => { vi.clearAllMocks(); });
 
   it('retourne 200 avec des tokens valides', async () => {
     vi.mocked(authService.login).mockResolvedValue({
       ...mockTokens,
-      user: { id: 'user-1', role: 'etudiant', email: 'test@test.bf' },
+      user: { id: 'user-1', role: 'etudiant', nom: 'Test User' },
     });
 
     const res = await request(app)
       .post('/api/v1/auth/login')
-      .send({ email: 'test@test.bf', password: 'Password123!' });
+      .send({ identifiant: 'test@test.bf', password: 'Password123!' });
 
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty('access_token');
     expect(res.body).toHaveProperty('refresh_token');
   });
 
-  it('retourne 400 si email manquant', async () => {
+  it('retourne 400 si identifiant manquant', async () => {
     const res = await request(app)
       .post('/api/v1/auth/login')
       .send({ password: 'Password123!' });
@@ -40,7 +42,7 @@ describe('POST /api/v1/auth/login', () => {
   it('retourne 400 si password manquant', async () => {
     const res = await request(app)
       .post('/api/v1/auth/login')
-      .send({ email: 'test@test.bf' });
+      .send({ identifiant: 'test@test.bf' });
 
     expect(res.status).toBe(400);
   });
@@ -52,29 +54,27 @@ describe('POST /api/v1/auth/login', () => {
 
     const res = await request(app)
       .post('/api/v1/auth/login')
-      .send({ email: 'wrong@test.bf', password: 'WrongPass!' });
+      .send({ identifiant: 'wrong@test.bf', password: 'WrongPass!' });
 
     expect(res.status).toBe(401);
   });
 });
 
 describe('POST /api/v1/auth/register/etudiant', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => { vi.clearAllMocks(); });
 
   it('retourne 201 avec les données valides', async () => {
     vi.mocked(authService.registerEtudiant).mockResolvedValue({
       ...mockTokens,
-      user: { id: 'etu-1', role: 'etudiant', email: 'etu@test.bf' },
+      user: { id: 'etu-1', role: 'etudiant', nom: 'Test Etudiant' },
     });
 
     const res = await request(app)
       .post('/api/v1/auth/register/etudiant')
       .send({
-        email: 'etu@test.bf',
         password: 'Password123!',
-        nom_complet: 'Test Etudiant',
         numero_ine: 'BF2300001',
-        universite_id: 'univ-uuid-1234',
+        universite_id: VALID_UUID,
       });
 
     expect(res.status).toBe(201);
@@ -85,10 +85,8 @@ describe('POST /api/v1/auth/register/etudiant', () => {
     const res = await request(app)
       .post('/api/v1/auth/register/etudiant')
       .send({
-        email: 'etu@test.bf',
         password: 'Password123!',
-        nom_complet: 'Test Etudiant',
-        universite_id: 'univ-uuid-1234',
+        universite_id: VALID_UUID,
       });
 
     expect(res.status).toBe(400);
@@ -96,10 +94,13 @@ describe('POST /api/v1/auth/register/etudiant', () => {
 });
 
 describe('POST /api/v1/auth/refresh', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => { vi.clearAllMocks(); });
 
   it('retourne 200 avec un refresh token valide', async () => {
-    vi.mocked(authService.refreshToken).mockResolvedValue(mockTokens);
+    vi.mocked(authService.refreshAccessToken).mockResolvedValue({
+      access_token: 'new.access.token',
+      expires_in: 900,
+    });
 
     const res = await request(app)
       .post('/api/v1/auth/refresh')

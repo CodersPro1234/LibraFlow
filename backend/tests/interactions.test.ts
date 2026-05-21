@@ -13,10 +13,9 @@ function makeToken(payload: object): string {
 }
 
 const etudiantToken = makeToken({ sub: 'etu-1', role: 'etudiant', email: 'etu@test.bf' });
-const profToken = makeToken({ sub: 'prof-1', role: 'professeur', email: 'prof@test.bf' });
 
 describe('POST /api/v1/publications/:id/like', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => { vi.clearAllMocks(); });
 
   it('retourne 204 après un like réussi', async () => {
     vi.mocked(interactionsService.likePublication).mockResolvedValue(undefined);
@@ -47,7 +46,7 @@ describe('POST /api/v1/publications/:id/like', () => {
 });
 
 describe('DELETE /api/v1/publications/:id/like', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => { vi.clearAllMocks(); });
 
   it('retourne 204 après unlike réussi', async () => {
     vi.mocked(interactionsService.unlikePublication).mockResolvedValue(undefined);
@@ -61,7 +60,7 @@ describe('DELETE /api/v1/publications/:id/like', () => {
 });
 
 describe('POST /api/v1/publications/:id/comments', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => { vi.clearAllMocks(); });
 
   const mockComment = {
     id: 'com-1',
@@ -97,7 +96,7 @@ describe('POST /api/v1/publications/:id/comments', () => {
 });
 
 describe('POST /api/v1/follow/professeur/:id', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => { vi.clearAllMocks(); });
 
   it('retourne 204 après follow réussi', async () => {
     vi.mocked(interactionsService.followProfesseur).mockResolvedValue(undefined);
@@ -123,7 +122,7 @@ describe('POST /api/v1/follow/professeur/:id', () => {
 });
 
 describe('POST /api/v1/publications/:id/save', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => { vi.clearAllMocks(); });
 
   it('retourne 204 après save réussi', async () => {
     vi.mocked(interactionsService.savePublication).mockResolvedValue(undefined);

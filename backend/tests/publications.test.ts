@@ -2,11 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import request from 'supertest';
 import app from '../src/server';
 import * as pubService from '../src/services/publications.service';
-import * as authService from '../src/services/auth.service';
 import jwt from 'jsonwebtoken';
 
 vi.mock('../src/services/publications.service');
-vi.mock('../src/services/auth.service');
 
 const ACCESS_SECRET = process.env['JWT_ACCESS_SECRET']!;
 
@@ -39,7 +37,7 @@ const mockPublication = {
 };
 
 describe('GET /api/v1/publications/:id', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => { vi.clearAllMocks(); });
 
   it('retourne 200 avec une publication valide', async () => {
     vi.mocked(pubService.getPublication).mockResolvedValue(mockPublication as never);
@@ -72,7 +70,7 @@ describe('GET /api/v1/publications/:id', () => {
 });
 
 describe('DELETE /api/v1/publications/:id', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => { vi.clearAllMocks(); });
 
   it('retourne 204 si le professeur est l\'auteur', async () => {
     vi.mocked(pubService.deletePublication).mockResolvedValue(undefined);
@@ -98,7 +96,7 @@ describe('DELETE /api/v1/publications/:id', () => {
 });
 
 describe('GET /api/v1/publications/:id/download', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => { vi.clearAllMocks(); });
 
   it('retourne 200 avec un download_url', async () => {
     vi.mocked(pubService.getDownloadUrl).mockResolvedValue({
@@ -117,7 +115,7 @@ describe('GET /api/v1/publications/:id/download', () => {
 });
 
 describe('GET /api/v1/feed', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => { vi.clearAllMocks(); });
 
   it('retourne 200 avec data et cursor_next', async () => {
     vi.mocked(pubService.getFeed).mockResolvedValue({
@@ -143,7 +141,7 @@ describe('GET /api/v1/feed', () => {
 });
 
 describe('GET /api/v1/publications/search', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => { vi.clearAllMocks(); });
 
   it('retourne 200 avec résultats', async () => {
     vi.mocked(pubService.searchPublications).mockResolvedValue({
@@ -164,7 +162,7 @@ describe('GET /api/v1/publications/search', () => {
 });
 
 describe('Services unitaires — Publications', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => { vi.clearAllMocks(); });
 
   it('getRecommendations retourne un tableau', async () => {
     vi.mocked(pubService.getRecommendations).mockResolvedValue([mockPublication as never]);

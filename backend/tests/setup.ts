@@ -37,7 +37,10 @@ vi.mock('../src/config/supabase', () => ({
       single: vi.fn().mockResolvedValue({ data: null, error: null }),
       maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
       returns: vi.fn().mockResolvedValue({ data: [], error: null }),
-      then: vi.fn().mockResolvedValue({ data: null, error: null }),
+      then: vi.fn().mockImplementation((onFulfilled: (v: unknown) => unknown) => {
+        onFulfilled?.({ data: null, error: null });
+        return Promise.resolve({ data: null, error: null });
+      }),
     })),
     storage: {
       from: vi.fn(() => ({
@@ -78,3 +81,9 @@ vi.mock('../src/jobs/moderation.worker', () => ({
 vi.mock('../src/jobs/tts.worker', () => ({
   startTtsWorker: vi.fn(),
 }));
+
+// Mock rate limiter — évite les connexions Redis en test
+vi.mock('../src/middlewares/rateLimiter.middleware', () => {
+  const noop = (_req: unknown, _res: unknown, next: () => void) => next();
+  return { globalLimiter: noop, authLimiter: noop, askLimiter: noop };
+});

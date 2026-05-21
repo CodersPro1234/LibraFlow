@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
 import { supabaseAdmin } from '../config/supabase';
 import * as pubService from '../services/publications.service';
-import { NotFoundError } from '../utils/errors';
+import { AppError, NotFoundError } from '../utils/errors';
 
 /** GET /api/v1/public/universites */
 export async function getUniversitesPubliques(_req: Request, res: Response): Promise<void> {
@@ -11,7 +11,7 @@ export async function getUniversitesPubliques(_req: Request, res: Response): Pro
     .eq('statut', 'approuvee')
     .order('nom_officiel');
 
-  if (error) throw new Error(error.message);
+  if (error) throw new AppError(error.message, 500, 'DB_ERROR', undefined, false);
   res.json({ data });
 }
 
@@ -26,7 +26,7 @@ export async function getUniversitePublique(req: Request, res: Response): Promis
     .eq('statut', 'approuvee')
     .maybeSingle();
 
-  if (error) throw new Error(error.message);
+  if (error) throw new AppError(error.message, 500, 'DB_ERROR', undefined, false);
   if (!univ) throw new NotFoundError('Université');
 
   // Stats depuis la materialized view
@@ -50,7 +50,7 @@ export async function getProfesseurPublic(req: Request, res: Response): Promise<
     .eq('statut', 'actif')
     .maybeSingle();
 
-  if (error) throw new Error(error.message);
+  if (error) throw new AppError(error.message, 500, 'DB_ERROR', undefined, false);
   if (!prof) throw new NotFoundError('Professeur');
 
   const { data: pubs } = await supabaseAdmin

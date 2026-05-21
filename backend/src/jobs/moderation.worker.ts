@@ -1,6 +1,6 @@
 import { Worker, type Job } from 'bullmq';
 import axios from 'axios';
-import redis from '../config/redis';
+import { redisBullMQ } from '../config/redis';
 import { env } from '../config/env';
 import * as pubRepo from '../repositories/publications.repository';
 import * as notifRepo from '../repositories/notification.repository';
@@ -79,7 +79,7 @@ async function processModeration(job: Job<ModerationJobData>): Promise<void> {
 
 export function startModerationWorker(): Worker<ModerationJobData> {
   const worker = new Worker<ModerationJobData>('moderation', processModeration, {
-    connection: redis,
+    connection: redisBullMQ,
     concurrency: 3,
   });
 

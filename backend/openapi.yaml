@@ -1637,5 +1637,5 @@ paths:
                 properties:
                   abonnes:             { type: array, items: {} }
                   total_abonnes:       { type: integer }
-                  commentaires_recents:{ type: array, items: { $ref: '#/components/schemas/Commentaire' } }
+                  commentaires_recents: { type: array, items: { $ref: '#/components/schemas/Commentaire' } }
                   likes_recents:       { type: array, items: {} }

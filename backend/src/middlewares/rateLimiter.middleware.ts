@@ -2,7 +2,9 @@ import rateLimit from 'express-rate-limit';
 import { RedisStore } from 'rate-limit-redis';
 import redis from '../config/redis';
 
-const redisStore = new RedisStore({
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const makeStore = (prefix: string): RedisStore => new RedisStore({
+  prefix,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   sendCommand: (...args: string[]) => (redis as any).call(...(args as any)) as Promise<any>,
 });
@@ -13,7 +15,7 @@ export const globalLimiter = rateLimit({
   max: 100,
   standardHeaders: true,
   legacyHeaders: false,
-  store: redisStore,
+  store: makeStore('rl:global:'),
   message: { error: { code: 'RATE_LIMIT', message: 'Trop de requêtes. Réessayez dans une minute.' } },
 });
 
@@ -23,7 +25,7 @@ export const authLimiter = rateLimit({
   max: 5,
   standardHeaders: true,
   legacyHeaders: false,
-  store: redisStore,
+  store: makeStore('rl:auth:'),
   message: { error: { code: 'RATE_LIMIT_AUTH', message: 'Trop de tentatives. Réessayez dans une minute.' } },
 });
 
@@ -33,7 +35,7 @@ export const askLimiter = rateLimit({
   max: 20,
   standardHeaders: true,
   legacyHeaders: false,
-  store: redisStore,
+  store: makeStore('rl:ask:'),
   keyGenerator: (req) => {
     const user = (req as typeof req & { user?: { id: string } }).user;
     return user?.id ?? req.ip ?? 'anonymous';

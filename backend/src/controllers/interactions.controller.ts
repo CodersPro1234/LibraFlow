@@ -6,7 +6,7 @@ import type { PostCommentaireInput } from '../validators/interactions.validators
 export async function likePublication(req: Request, res: Response): Promise<void> {
   const { id } = req.params as { id: string };
   await interactionsService.likePublication(id, req.user!.id, req.user!.role);
-  res.status(201).json({ message: 'Liké' });
+  res.status(204).send();
 }
 
 /** DELETE /api/v1/publications/:id/like */
@@ -51,7 +51,7 @@ export async function deleteCommentaire(req: Request, res: Response): Promise<vo
 export async function savePublication(req: Request, res: Response): Promise<void> {
   const { id } = req.params as { id: string };
   await interactionsService.savePublication(id, req.user!.id, req.user!.role);
-  res.status(201).json({ message: 'Sauvegardé' });
+  res.status(204).send();
 }
 
 /** DELETE /api/v1/publications/:id/save */
@@ -65,7 +65,7 @@ export async function unsavePublication(req: Request, res: Response): Promise<vo
 export async function followProfesseur(req: Request, res: Response): Promise<void> {
   const { id } = req.params as { id: string };
   await interactionsService.followProfesseur(req.user!.id, req.user!.role, id);
-  res.status(201).json({ message: 'Abonné' });
+  res.status(204).send();
 }
 
 /** DELETE /api/v1/follow/professeur/:id */
@@ -79,7 +79,7 @@ export async function unfollowProfesseur(req: Request, res: Response): Promise<v
 export async function followUniversite(req: Request, res: Response): Promise<void> {
   const { id } = req.params as { id: string };
   await interactionsService.followUniversite(req.user!.id, req.user!.role, id);
-  res.status(201).json({ message: 'Abonné' });
+  res.status(204).send();
 }
 
 /** DELETE /api/v1/follow/universite/:id */

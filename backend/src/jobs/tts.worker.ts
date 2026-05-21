@@ -1,6 +1,6 @@
 import { Worker, type Job } from 'bullmq';
 import axios from 'axios';
-import redis from '../config/redis';
+import { redisBullMQ } from '../config/redis';
 import { env } from '../config/env';
 import * as pubRepo from '../repositories/publications.repository';
 import logger from '../utils/logger';
@@ -28,7 +28,7 @@ async function processTts(job: Job<TtsJobData>): Promise<void> {
 
 export function startTtsWorker(): Worker<TtsJobData> {
   const worker = new Worker<TtsJobData>('tts', processTts, {
-    connection: redis,
+    connection: redisBullMQ,
     concurrency: 2,
   });
 

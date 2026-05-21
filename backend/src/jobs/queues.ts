@@ -1,7 +1,7 @@
 import { Queue } from 'bullmq';
-import redis from '../config/redis';
+import { redisBullMQ } from '../config/redis';
 
-const connection = redis;
+const connection = redisBullMQ;
 
 export const moderationQueue = new Queue('moderation', {
   connection,

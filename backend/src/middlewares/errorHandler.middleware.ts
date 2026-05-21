@@ -36,6 +36,15 @@ export function errorHandler(
     return;
   }
 
+  // Erreur avec statusCode (ex: erreur levée par un service mocké en test)
+  if (err instanceof Error && 'statusCode' in err) {
+    const e = err as Error & { statusCode: number; code?: string };
+    res.status(e.statusCode).json({
+      error: { code: e.code ?? 'ERROR', message: e.message },
+    });
+    return;
+  }
+
   // Erreur inattendue (bug de programmation)
   logger.error({ err }, 'Erreur inattendue non gérée');
   res.status(500).json({

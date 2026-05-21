@@ -3,6 +3,8 @@ import * as notifRepo from '../repositories/notification.repository';
 import * as pubRepo from '../repositories/publications.repository';
 import { ConflictError, ForbiddenError, NotFoundError } from '../utils/errors';
 import logger from '../utils/logger';
+import type { Role } from '../types';
+import type { AbonnementRow, CommentaireRow } from '../types/db';
 import type { CommentaireWithUser } from '../repositories/interactions.repository';
 
 // ── Likes ─────────────────────────────────────────────────────────────────────
@@ -80,7 +82,7 @@ export async function postCommentaire(params: {
     if (parent && parent.user_id !== params.userId) {
       void notifRepo.createNotification({
         destinataire_id: parent.user_id,
-        destinataire_role: parent.user_role as import('../types').Role,
+        destinataire_role: parent.user_role as Role,
         type: 'reponse_commentaire',
         titre: 'Réponse à votre commentaire',
         message: `Quelqu'un a répondu à votre commentaire sur "${pub.titre}".`,
@@ -202,7 +204,12 @@ export async function unfollowUniversite(followerId: string, universiteId: strin
 
 // ── Communauté du professeur ──────────────────────────────────────────────────
 
-export async function getCommunaute(professeurId: string) {
+export async function getCommunaute(professeurId: string): Promise<{
+  abonnes: AbonnementRow[];
+  total_abonnes: number;
+  commentaires_recents: CommentaireRow[];
+  likes_recents: never[];
+}> {
   const [abonnes, totalAbonnes, commentairesRecents] = await Promise.all([
     interactionsRepo.findAbonnes(professeurId, 'professeur', 20),
     interactionsRepo.findAbonnesCount(professeurId, 'professeur'),

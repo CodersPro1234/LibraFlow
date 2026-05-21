@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
 import * as univService from '../services/universite.service';
+import { AppError } from '../utils/errors';
 import type { MotifInput } from '../validators/universite.validators';
 
 function getUniversiteId(req: Request): string {
@@ -67,7 +68,7 @@ export async function getPublication(req: Request, res: Response): Promise<void>
     .eq('universite_id', universiteId)
     .maybeSingle();
 
-  if (error) throw new Error(error.message);
+  if (error) throw new AppError(error.message, 500, 'DB_ERROR', undefined, false);
   if (!data) {
     res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Publication non trouvée' } });
     return;
