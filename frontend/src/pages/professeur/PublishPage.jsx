@@ -5,6 +5,9 @@ const PublishPage = () => {
   const [progress, setProgress] = useState(0)
   const [iaProgress, setIaProgress] = useState(0)
   const [type, setType] = useState('Cours')
+  const [titre, setTitre] = useState('')
+  const [matiere, setMatiere] = useState('Droit Constitutionnel')
+  const [niveau, setNiveau] = useState('Licence 1')
 
   const types = ['Cours', 'TD', 'Annales', 'Résumé']
 
@@ -47,6 +50,8 @@ const PublishPage = () => {
             <input
               type="text"
               placeholder="Ex: Droit Constitutionnel — Chapitre 5"
+              value={titre}
+              onChange={e => setTitre(e.target.value)}
               className="w-full px-3 py-2 rounded-lg border text-sm outline-none"
               style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
             />
@@ -56,7 +61,10 @@ const PublishPage = () => {
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1">
               <label className="text-xs font-medium" style={{ color: 'var(--color-muted)' }}>Matière *</label>
-              <select className="w-full px-3 py-2 rounded-lg border text-sm outline-none"
+              <select
+                value={matiere}
+                onChange={e => setMatiere(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border text-sm outline-none"
                 style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}>
                 <option>Droit Constitutionnel</option>
                 <option>Mathématiques</option>
@@ -67,7 +75,10 @@ const PublishPage = () => {
             </div>
             <div className="flex flex-col gap-1">
               <label className="text-xs font-medium" style={{ color: 'var(--color-muted)' }}>Niveau *</label>
-              <select className="w-full px-3 py-2 rounded-lg border text-sm outline-none"
+              <select
+                value={niveau}
+                onChange={e => setNiveau(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border text-sm outline-none"
                 style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}>
                 <option>Licence 1</option>
                 <option>Licence 2</option>

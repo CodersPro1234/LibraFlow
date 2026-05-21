@@ -5,13 +5,20 @@ const LoginPage = () => {
   const navigate = useNavigate()
   const login = useAuthStore((state) => state.login)
 
+  const personas = {
+    etudiant:   { name: 'Salif Kaboré',        universite: 'UJK-Zerbo' },
+    professeur: { name: 'Ouédraogo Mamadou',   universite: 'UJK-Zerbo' },
+    universite: { name: 'Admin UJK-Zerbo',     universite: 'UJK-Zerbo' },
+    ministere:  { name: 'MENAPLN',             universite: '' },
+  }
+
   const handleLogin = (role) => {
-    login({ name: 'Test User' }, 'fake-token', role)
+    login(personas[role], 'fake-token', role)
     const routes = {
-      etudiant: '/etudiant/feed',
+      etudiant:   '/etudiant/feed',
       professeur: '/professeur/feed',
       universite: '/universite/dashboard',
-      ministere: '/ministere/dashboard',
+      ministere:  '/ministere/dashboard',
     }
     navigate(routes[role])
   }

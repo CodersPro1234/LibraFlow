@@ -1,4 +1,22 @@
+import { useNavigate } from 'react-router-dom'
+import useAuthStore from '../../stores/authStore'
+
+const notifRoutes = {
+  etudiant:   '/etudiant/notifications',
+  professeur: '/professeur/feed',
+  universite: '/universite/dashboard',
+  ministere:  '/ministere/dashboard',
+}
+
 const Topbar = ({ title }) => {
+  const { role } = useAuthStore()
+  const navigate = useNavigate()
+
+  const handleCloche = () => {
+    const route = notifRoutes[role]
+    if (route) navigate(route)
+  }
+
   return (
     <div className="flex items-center justify-between px-6 py-3 bg-white border-b shrink-0"
       style={{ borderColor: 'var(--color-border)' }}>
@@ -19,13 +37,17 @@ const Topbar = ({ title }) => {
         </div>
 
         {/* Notifications */}
-        <button className="relative w-8 h-8 rounded-lg flex items-center justify-center text-sm border"
+        <button
+          onClick={handleCloche}
+          className="relative w-8 h-8 rounded-lg flex items-center justify-center text-sm border transition-all hover:opacity-80"
           style={{ borderColor: 'var(--color-border)', color: 'var(--color-muted)' }}>
           🔔
-          <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full text-white flex items-center justify-center"
-            style={{ background: 'var(--color-danger)', fontSize: '10px' }}>
-            3
-          </span>
+          {role === 'etudiant' && (
+            <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full text-white flex items-center justify-center"
+              style={{ background: 'var(--color-danger)', fontSize: '10px' }}>
+              3
+            </span>
+          )}
         </button>
 
       </div>
