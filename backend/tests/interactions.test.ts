@@ -4,7 +4,20 @@ import app from '../src/server';
 import * as interactionsService from '../src/services/interactions.service';
 import jwt from 'jsonwebtoken';
 
-vi.mock('../src/services/interactions.service');
+vi.mock('../src/services/interactions.service', () => ({
+  likePublication: vi.fn(),
+  unlikePublication: vi.fn(),
+  getCommentaires: vi.fn(),
+  postCommentaire: vi.fn(),
+  deleteCommentaire: vi.fn(),
+  savePublication: vi.fn(),
+  unsavePublication: vi.fn(),
+  followProfesseur: vi.fn(),
+  unfollowProfesseur: vi.fn(),
+  followUniversite: vi.fn(),
+  unfollowUniversite: vi.fn(),
+  getCommunaute: vi.fn(),
+}));
 
 const ACCESS_SECRET = process.env['JWT_ACCESS_SECRET']!;
 
@@ -121,6 +134,56 @@ describe('POST /api/v1/follow/professeur/:id', () => {
   });
 });
 
+describe('GET /api/v1/publications/:id/comments', () => {
+  beforeEach(() => { vi.clearAllMocks(); });
+
+  it('retourne 200 avec la liste des commentaires', async () => {
+    vi.mocked(interactionsService.getCommentaires).mockResolvedValue({
+      data: [],
+      cursor_next: null,
+      has_more: false,
+    });
+
+    const res = await request(app)
+      .get('/api/v1/publications/pub-1/comments')
+      .set('Authorization', `Bearer ${etudiantToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('data');
+  });
+
+  it('retourne 401 sans token', async () => {
+    const res = await request(app).get('/api/v1/publications/pub-1/comments');
+    expect(res.status).toBe(401);
+  });
+});
+
+describe('DELETE /api/v1/comments/:id', () => {
+  beforeEach(() => { vi.clearAllMocks(); });
+
+  it('retourne 204 après suppression réussie', async () => {
+    vi.mocked(interactionsService.deleteCommentaire).mockResolvedValue(undefined);
+
+    const res = await request(app)
+      .delete('/api/v1/comments/com-1')
+      .set('Authorization', `Bearer ${etudiantToken}`);
+
+    expect(res.status).toBe(204);
+  });
+
+  it('retourne 403 si non autorisé', async () => {
+    vi.mocked(interactionsService.deleteCommentaire).mockRejectedValue(
+      Object.assign(new Error('Non autorisé'), { statusCode: 403, code: 'FORBIDDEN' })
+    );
+
+    const res = await request(app)
+      .delete('/api/v1/comments/com-1')
+      .set('Authorization', `Bearer ${etudiantToken}`);
+
+    expect(res.status).toBe(403);
+  });
+});
+
 describe('POST /api/v1/publications/:id/save', () => {
   beforeEach(() => { vi.clearAllMocks(); });
 
@@ -129,6 +192,74 @@ describe('POST /api/v1/publications/:id/save', () => {
 
     const res = await request(app)
       .post('/api/v1/publications/pub-1/save')
+      .set('Authorization', `Bearer ${etudiantToken}`);
+
+    expect(res.status).toBe(204);
+  });
+});
+
+describe('DELETE /api/v1/publications/:id/save', () => {
+  beforeEach(() => { vi.clearAllMocks(); });
+
+  it('retourne 204 après unsave réussi', async () => {
+    vi.mocked(interactionsService.unsavePublication).mockResolvedValue(undefined);
+
+    const res = await request(app)
+      .delete('/api/v1/publications/pub-1/save')
+      .set('Authorization', `Bearer ${etudiantToken}`);
+
+    expect(res.status).toBe(204);
+  });
+});
+
+describe('DELETE /api/v1/follow/professeur/:id', () => {
+  beforeEach(() => { vi.clearAllMocks(); });
+
+  it('retourne 204 après unfollow réussi', async () => {
+    vi.mocked(interactionsService.unfollowProfesseur).mockResolvedValue(undefined);
+
+    const res = await request(app)
+      .delete('/api/v1/follow/professeur/prof-2')
+      .set('Authorization', `Bearer ${etudiantToken}`);
+
+    expect(res.status).toBe(204);
+  });
+});
+
+describe('POST /api/v1/follow/universite/:id', () => {
+  beforeEach(() => { vi.clearAllMocks(); });
+
+  it('retourne 204 après follow université réussi', async () => {
+    vi.mocked(interactionsService.followUniversite).mockResolvedValue(undefined);
+
+    const res = await request(app)
+      .post('/api/v1/follow/universite/univ-1')
+      .set('Authorization', `Bearer ${etudiantToken}`);
+
+    expect(res.status).toBe(204);
+  });
+
+  it('retourne 409 si déjà suivi', async () => {
+    vi.mocked(interactionsService.followUniversite).mockRejectedValue(
+      Object.assign(new Error('Déjà suivi'), { statusCode: 409, code: 'CONFLICT' })
+    );
+
+    const res = await request(app)
+      .post('/api/v1/follow/universite/univ-1')
+      .set('Authorization', `Bearer ${etudiantToken}`);
+
+    expect(res.status).toBe(409);
+  });
+});
+
+describe('DELETE /api/v1/follow/universite/:id', () => {
+  beforeEach(() => { vi.clearAllMocks(); });
+
+  it('retourne 204 après unfollow université réussi', async () => {
+    vi.mocked(interactionsService.unfollowUniversite).mockResolvedValue(undefined);
+
+    const res = await request(app)
+      .delete('/api/v1/follow/universite/univ-1')
       .set('Authorization', `Bearer ${etudiantToken}`);
 
     expect(res.status).toBe(204);

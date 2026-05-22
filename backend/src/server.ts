@@ -107,9 +107,9 @@ app.use('/api/v1/ministere', ministereRouter);
 app.use('/api/v1/me', meRouter);
 app.use('/api/v1/feed', feedRouter);
 app.use('/api/v1/publications', publicationsRouter);
+app.use('/api/v1/public', publicRouter);    // inclut /public/share/:token — avant interactionsRouter (pas d'auth)
 app.use('/api/v1', interactionsRouter);     // /publications/:id/like|comments|save + /follow/... + /comments/:id
 app.use('/api/v1/notifications', notificationsRouter);
-app.use('/api/v1/public', publicRouter);    // inclut /public/share/:token
 app.use('/api/v1/sync', syncRouter);
 app.use('/api/v1/offline', syncRouter);     // /offline/feed-pack via syncRouter
 

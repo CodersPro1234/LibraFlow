@@ -116,9 +116,14 @@ export async function askQuestion(req: Request, res: Response): Promise<void> {
   const { default: axios } = await import('axios');
   const { env } = await import('../config/env');
 
-  const { data } = await axios.post<{ reponse: string }>(
-    `${env.iaServiceUrl}/chat`,
-    { question, contexte_document: (pub as { resume_ia?: string }).resume_ia ?? (pub as { titre: string }).titre },
+  const { data } = await axios.post<{ reponse: string; sources_pages: number[] }>(
+    `${env.iaServiceUrl}/ai/chat`,
+    {
+      publicationId: id,
+      question,
+      contexte_pdf: (pub as { resume_ia?: string }).resume_ia ?? (pub as { titre: string }).titre,
+      historique_session: [],
+    },
     { timeout: 30_000 }
   );
 

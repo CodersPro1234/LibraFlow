@@ -32,6 +32,8 @@ vi.mock('../src/config/supabase', () => ({
       gte: vi.fn().mockReturnThis(),
       in: vi.fn().mockReturnThis(),
       is: vi.fn().mockReturnThis(),
+      not: vi.fn().mockReturnThis(),
+      upsert: vi.fn().mockResolvedValue({ data: null, error: null }),
       order: vi.fn().mockReturnThis(),
       limit: vi.fn().mockReturnThis(),
       single: vi.fn().mockResolvedValue({ data: null, error: null }),

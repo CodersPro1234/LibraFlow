@@ -27,7 +27,9 @@ export interface ModerationJobData {
   publication_id: string;
   titre: string;
   matiere: string;
-  texte_extrait: string;
+  niveau: string;
+  type_doc: string;
+  pdf_url: string;
 }
 
 export interface TtsJobData {

@@ -8,6 +8,7 @@ import type { TtsJobData } from './queues';
 
 interface IaTtsResponse {
   audio_url: string;
+  duree_seconds: number;
 }
 
 async function processTts(job: Job<TtsJobData>): Promise<void> {
@@ -16,14 +17,21 @@ async function processTts(job: Job<TtsJobData>): Promise<void> {
   logger.info({ publication_id, jobId: job.id }, 'Début génération TTS');
 
   const { data } = await axios.post<IaTtsResponse>(
-    `${env.iaServiceUrl}/tts`,
-    { texte, publication_id },
+    `${env.iaServiceUrl}/ai/tts`,
+    {
+      texte,
+      voix: 'fr-FR-Wavenet-C',
+      vitesse: 1.0,
+    },
     { timeout: 120_000 }
   );
 
   await pubRepo.updateAudioUrl(publication_id, data.audio_url);
 
-  logger.info({ publication_id, audioUrl: data.audio_url }, 'TTS généré');
+  logger.info(
+    { publication_id, audioUrl: data.audio_url, duree_seconds: data.duree_seconds },
+    'TTS généré'
+  );
 }
 
 export function startTtsWorker(): Worker<TtsJobData> {

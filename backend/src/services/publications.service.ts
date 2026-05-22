@@ -68,12 +68,14 @@ export async function createPublication(input: CreatePublicationInput): Promise<
     texte_extrait: texteExtrait,
   });
 
-  // Enqueue analyse IA avec le texte extrait
+  // Enqueue analyse IA — le service IA télécharge le PDF directement via pdf_url
   await moderationQueue.add('moderate', {
     publication_id: pub.id,
     titre: pub.titre,
     matiere: pub.matiere,
-    texte_extrait: pub.texte_extrait ?? pub.titre,
+    niveau: pub.niveau,
+    type_doc: pub.type_doc,
+    pdf_url: urlData.publicUrl,
   });
 
   logger.info({ publicationId: pub.id, professeurId: input.professeurId }, 'Publication créée, analyse en attente');
@@ -369,15 +371,25 @@ export async function getRecommendations(etudiantId: string): Promise<Publicatio
   try {
     const { default: axios } = await import('axios');
     const historique = await pubRepo.findHistoriqueByEtudiant(etudiantId, undefined, 20);
-    const ids = historique.map((h) => h.publication_id);
 
-    const { data } = await axios.post<{ publication_ids: string[] }>(
-      `${env.iaServiceUrl}/recommend`,
-      { etudiant_id: etudiantId, historique: ids },
+    const { data } = await axios.post<{
+      recommandations: { publication_id: string; score: number; raison: string }[];
+    }>(
+      `${env.iaServiceUrl}/ai/recommend`,
+      {
+        etudiantId,
+        historique: historique.map((h) => ({
+          publication_id: h.publication_id,
+          type: h.type_action,
+          duree_seconds: 0,
+        })),
+        preferences: {},
+        limit: 10,
+      },
       { timeout: 10_000 }
     );
 
-    const publicationIds = data.publication_ids;
+    const publicationIds = data.recommandations.map((r) => r.publication_id);
     await redis.set(recoKey(etudiantId), JSON.stringify(publicationIds), 'EX', RECO_CACHE_TTL);
 
     const pubs = await Promise.all(publicationIds.map((id) => pubRepo.findByIdWithRelations(id)));

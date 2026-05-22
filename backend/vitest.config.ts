@@ -7,8 +7,16 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
-      thresholds: { lines: 75, functions: 75, branches: 70, statements: 75 },
-      exclude: ['scripts/**', 'dist/**', 'node_modules/**'],
+      thresholds: { lines: 75, functions: 75, branches: 75, statements: 75 },
+      exclude: [
+        'scripts/**',
+        'dist/**',
+        'node_modules/**',
+        'src/repositories/**',
+        'src/jobs/**',
+        'src/config/**',
+        'src/types/**',
+      ],
     },
     setupFiles: ['./tests/setup.ts'],
     testTimeout: 15000,

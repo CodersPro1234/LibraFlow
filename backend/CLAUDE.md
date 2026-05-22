@@ -151,37 +151,46 @@ libraflow-backend/
 
 ## Contrat avec le microservice IA (Sarifatou)
 
-Le backend communique avec le service IA via HTTP. Voici le contrat :
+Base URL : `http://localhost:5000` (dev) | `https://ai.libraflow.bf` (prod)  
+Le backend communique via HTTP. Timeout max : 30s (chat) / 60s (moderate) / 120s (tts).
 
 ```typescript
-// POST /moderate
-// Body: { texte: string, matiere: string, titre: string }
+// POST /ai/moderate
+// Body: { publicationId, titre, matiere, niveau, type_doc, pdf_url }
 // Response:
 {
-  statut: 'valide' | 'signale',
-  score_fiabilite: number,        // 0-100
-  resume: string,                 // résumé généré
-  embedding: number[],            // vecteur 768 dimensions
-  rapport: {
-    pertinence_educative: boolean,
-    coherence_matiere: boolean,
-    plagiat_detecte: boolean,
-    contenu_inapproprie: boolean,
-    raisons: string[]
-  }
+  status: 'validee' | 'signalee',
+  score_fiabilite: number,          // 0-100
+  resume: string,
+  embedding: number[],              // vecteur pgvector
+  raisons: {
+    pertinence: { score: number, detail: string },
+    coherence_matiere: { score: number, detail: string },
+    plagiat: { score: number, similaires: { publication_id: string, score: number }[] },
+    contenu_inapproprie: { detected: boolean, detail: string },
+  },
+  duree_analyse_ms: number,
 }
 
-// POST /tts
-// Body: { texte: string, publication_id: string }
-// Response: { audio_url: string }
+// POST /ai/tts
+// Body: { texte: string, voix: 'fr-FR-Wavenet-C', vitesse: 1.0 }
+// Response: { audio_url: string, duree_seconds: number }
 
-// POST /recommend
-// Body: { etudiant_id: string, historique: string[] }
-// Response: { publication_ids: string[] }
+// POST /ai/recommend
+// Body: { etudiantId, historique: [{ publication_id, type, duree_seconds }], preferences: { matieres?, niveau?, universite_id? }, limit }
+// Response: { recommandations: [{ publication_id, score, raison }] }
 
-// POST /chat
-// Body: { question: string, contexte_document: string }
-// Response: streaming SSE ou { reponse: string }
+// POST /ai/chat
+// Body: { publicationId, question, contexte_pdf: string, historique_session: [{ role, content }] }
+// Response: { reponse: string, sources_pages: number[] }
+
+// POST /ai/plagiarism-check
+// Body: { embedding: number[], universite_id: string }
+// Response: { similaires: [{ publication_id: string, score: number }] }
+
+// POST /ai/summarize
+// Body: { texte: string, max_lines: number }
+// Response: { resume: string, mots_cles: string[] }
 ```
 
 ---
