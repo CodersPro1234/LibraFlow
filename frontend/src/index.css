@@ -1,17 +1,26 @@
 @import "tailwindcss";
 
+@theme {
+  --text-xs: 0.8125rem;       /* 13px au lieu de 12px */
+  --text-sm: 0.9375rem;       /* 15px au lieu de 14px */
+  --text-base: 1.0625rem;     /* 17px au lieu de 16px */
+  --text-lg: 1.1875rem;       /* 19px au lieu de 18px */
+  --text-xl: 1.3125rem;       /* 21px au lieu de 20px */
+  --text-2xl: 1.5625rem;      /* 25px au lieu de 24px */
+}
+
 :root {
-  --color-primary: #1A56DB;
-  --color-primary-dark: #1e3a8a;
-  --color-primary-light: #EFF6FF;
+  --color-primary: #3B7FE1;
+  --color-primary-dark: #2563EB;
+  --color-primary-light: #EEF4FF;
   --color-gold: #B45309;
   --color-gold-light: #FEF3C7;
   --color-success: #1D9E75;
   --color-success-light: #DCFCE7;
   --color-danger: #E24B4A;
   --color-danger-light: #FEE2E2;
-  --color-bg: #F8F9FC;
-  --color-text: #1a1a18;
+  --color-bg: #F5F7FB;
+  --color-text: #111827;
   --color-muted: #6B7280;
   --color-border: #E5E7EB;
 }
@@ -23,7 +32,13 @@
 }
 
 body {
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', 'DM Sans', system-ui, sans-serif;
   background-color: var(--color-bg);
   color: var(--color-text);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+input, select, textarea, button {
+  font-family: inherit;
 }
