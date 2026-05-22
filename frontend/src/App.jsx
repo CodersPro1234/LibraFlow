@@ -33,6 +33,7 @@ import CommunautePage from './pages/professeur/CommunautePage'
 import ProfesseurProfilPage2 from './pages/professeur/ProfilPage'
 import ProfesseurNotificationsPage from './pages/professeur/NotificationsPage'
 import SearchPage from './pages/etudiant/SearchPage'
+import UniversiteProfilEtudiantPage from './pages/etudiant/UniversiteProfilPage'
 
 const App = () => {
   return (
@@ -70,6 +71,9 @@ const App = () => {
         </Route>
         <Route element={<AppLayout title="Profil professeur" />}>
           <Route path="/etudiant/professeur/:id" element={<ProfesseurProfilPage />} />
+        </Route>
+        <Route element={<AppLayout title="Profil université" />}>
+          <Route path="/etudiant/universites/:id" element={<UniversiteProfilEtudiantPage />} />
         </Route>
 
         {/* Professeur */}

@@ -1,17 +1,22 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 
+// ── Static data ───────────────────────────────────────────────────────────────
 const documents = {
   1: {
     id: 1,
     univLogo: 'UJK', univColor: 'var(--color-primary)',
     universite: 'Université Joseph Ki-Zerbo',
-    auteur: 'Prof. Ouédraogo Mamadou',
-    auteurId: 1,
+    auteur: 'Prof. Ouédraogo Mamadou', auteurId: 1,
     date: '18 Mai 2026',
     titre: 'Droit Constitutionnel — Cours magistral Chapitre 4',
     matiere: 'Droit Constitutionnel', niveau: 'Licence 2', type: 'Cours',
     score: 94, likes: 24, vues: 412,
+    scoreDetails: [
+      { label: 'Pertinence', val: 96, inverse: false },
+      { label: 'Plagiat',    val: 0,  inverse: true  },
+      { label: 'Clarté',    val: 88, inverse: false },
+    ],
     contenu: `Le droit constitutionnel est la branche du droit public qui étudie l'organisation et le fonctionnement du pouvoir politique au sein de l'État.
 
 I. LA NOTION DE CONSTITUTION
@@ -42,12 +47,16 @@ La constitution est donc le texte fondateur de tout État de droit. Sa connaissa
     id: 2,
     univLogo: 'USTA', univColor: '#378ADD',
     universite: 'USTA Bobo-Dioulasso',
-    auteur: 'Prof. Traoré Fatoumata',
-    auteurId: 2,
+    auteur: 'Prof. Traoré Fatoumata', auteurId: 2,
     date: '15 Mai 2026',
     titre: 'Annales Mathématiques — Session 2024/2025',
     matiere: 'Mathématiques', niveau: 'Licence 3', type: 'Annales',
     score: 88, likes: 41, vues: 389,
+    scoreDetails: [
+      { label: 'Pertinence', val: 90, inverse: false },
+      { label: 'Plagiat',    val: 0,  inverse: true  },
+      { label: 'Clarté',    val: 85, inverse: false },
+    ],
     contenu: `UNIVERSITÉ DE USTA BOBO-DIOULASSO
 Faculté des Sciences et Techniques
 Annales de Mathématiques — Licence 3
@@ -82,12 +91,16 @@ BARÈME : /20 points | Durée : 3h | Documents autorisés : aucun`,
     id: 3,
     univLogo: 'ISGE', univColor: 'var(--color-gold)',
     universite: 'ISGE-BF Ouagadougou',
-    auteur: 'Prof. Zongo Issa',
-    auteurId: 3,
+    auteur: 'Prof. Zongo Issa', auteurId: 3,
     date: '10 Mai 2026',
-    titre: 'TD Finance d\'entreprise — Exercices corrigés S2',
+    titre: "TD Finance d'entreprise — Exercices corrigés S2",
     matiere: 'Finance', niveau: 'Master 1', type: 'TD',
     score: 71, likes: 19, vues: 187,
+    scoreDetails: [
+      { label: 'Pertinence', val: 75, inverse: false },
+      { label: 'Plagiat',    val: 5,  inverse: true  },
+      { label: 'Clarté',    val: 72, inverse: false },
+    ],
     contenu: `TD N°3 — Finance d'entreprise
 Master 1 Finance — Semestre 2
 
@@ -121,329 +134,377 @@ CORRIGÉ :
 
 const initialCommentaires = [
   { id: 1, auteur: 'Aminata D.', initiales: 'AD', temps: 'il y a 2h', texte: 'Excellent cours, très bien structuré ! Les explications sur la suprématie constitutionnelle sont très claires.' },
-  { id: 2, auteur: 'Ibrahim T.', initiales: 'IT', temps: 'hier', texte: 'Merci professeur. Est-ce qu\'il y a un corrigé des exercices pratiques du chapitre 3 ?' },
-  { id: 3, auteur: 'Mariam O.', initiales: 'MO', temps: 'il y a 3 jours', texte: 'Je vais utiliser ce cours pour préparer mon examen de la semaine prochaine. Très utile !' },
+  { id: 2, auteur: 'Ibrahim T.',  initiales: 'IT', temps: 'hier',       texte: "Merci professeur. Est-ce qu'il y a un corrigé des exercices pratiques du chapitre 3 ?" },
+  { id: 3, auteur: 'Mariam O.',  initiales: 'MO', temps: 'il y a 3 jours', texte: 'Je vais utiliser ce cours pour préparer mon examen de la semaine prochaine. Très utile !' },
 ]
+
+// ── Renders document text with styled sections ────────────────────────────────
+const DocContent = ({ text }) => {
+  const lines = text.split('\n')
+  const isSection = (l) => /^(I{1,3}V?|VI{0,3}|IV|V|[IVX]+)\.\s+[A-ZÀÂÉÈÊ]/.test(l.trim()) || /^[A-ZÀÂÉÈÊËÙÛÜ\s]{10,}$/.test(l.trim())
+
+  return (
+    <div style={{ fontFamily: 'Georgia, serif', fontSize: '15px', lineHeight: 1.85, color: '#1a1a2e' }}>
+      {lines.map((line, i) => {
+        const trimmed = line.trim()
+        if (!trimmed) return <div key={i} style={{ height: '12px' }} />
+        if (isSection(trimmed)) {
+          return (
+            <div key={i} style={{ fontSize: '14px', fontWeight: 700, color: 'var(--color-primary)', fontFamily: "'Inter',sans-serif", textTransform: 'uppercase', letterSpacing: '0.5px', marginTop: '24px', marginBottom: '10px', paddingBottom: '6px', borderBottom: '2px solid var(--color-primary-light)' }}>
+              {trimmed}
+            </div>
+          )
+        }
+        if (trimmed.startsWith('—') || trimmed.startsWith('-')) {
+          return (
+            <div key={i} style={{ paddingLeft: '20px', borderLeft: '3px solid var(--color-primary-light)', marginBottom: '8px', color: '#374151', fontSize: '14px', lineHeight: 1.75 }}>
+              {trimmed}
+            </div>
+          )
+        }
+        if (/^\d+\./.test(trimmed)) {
+          return (
+            <div key={i} style={{ paddingLeft: '16px', marginBottom: '6px', fontSize: '14px', color: '#374151', lineHeight: 1.7, display: 'flex', gap: '8px' }}>
+              <span style={{ color: 'var(--color-primary)', fontWeight: 700, flexShrink: 0, fontFamily: "'Inter',sans-serif", fontSize: '13px' }}>
+                {trimmed.match(/^\d+\./)[0]}
+              </span>
+              <span>{trimmed.replace(/^\d+\.\s*/, '')}</span>
+            </div>
+          )
+        }
+        return (
+          <p key={i} style={{ marginBottom: '10px', color: '#374151', fontSize: '14.5px', lineHeight: 1.85 }}>
+            {trimmed}
+          </p>
+        )
+      })}
+    </div>
+  )
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
+const card = { background: '#fff', borderRadius: '16px', border: '1px solid #E5E7EB', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }
 
 const LecturePage = () => {
   const { id } = useParams()
   const navigate = useNavigate()
   const doc = documents[id] || documents[1]
 
-  const [liked, setLiked] = useState(false)
+  const [liked,       setLiked]       = useState(false)
+  const [saved,       setSaved]       = useState(false)
   const [commentaires, setCommentaires] = useState(initialCommentaires)
-  const [newComment, setNewComment] = useState('')
-  const [ttsState, setTtsState] = useState('idle') // idle | playing | paused
-  const [downloaded, setDownloaded] = useState(false)
-  const [shared, setShared] = useState(false)
+  const [newComment,  setNewComment]  = useState('')
+  const [ttsState,    setTtsState]    = useState('idle')
+  const [downloaded,  setDownloaded]  = useState(false)
+  const [shared,      setShared]      = useState(false)
+  const [commentLikes, setCommentLikes] = useState({})
   const utteranceRef = useRef(null)
 
-  useEffect(() => {
-    return () => { window.speechSynthesis?.cancel() }
-  }, [])
+  useEffect(() => { return () => window.speechSynthesis?.cancel() }, [])
 
   const handleTTS = () => {
     if (!window.speechSynthesis) return
-
-    if (ttsState === 'playing') {
-      window.speechSynthesis.pause()
-      setTtsState('paused')
-      return
-    }
-    if (ttsState === 'paused') {
-      window.speechSynthesis.resume()
-      setTtsState('playing')
-      return
-    }
-
+    if (ttsState === 'playing') { window.speechSynthesis.pause(); setTtsState('paused'); return }
+    if (ttsState === 'paused')  { window.speechSynthesis.resume(); setTtsState('playing'); return }
     window.speechSynthesis.cancel()
     const utter = new SpeechSynthesisUtterance(doc.titre + '. ' + doc.contenu)
-    utter.lang = 'fr-FR'
-    utter.rate = 0.9
+    utter.lang = 'fr-FR'; utter.rate = 0.92
     utter.onend = () => setTtsState('idle')
     utter.onerror = () => setTtsState('idle')
     utteranceRef.current = utter
     window.speechSynthesis.speak(utter)
     setTtsState('playing')
   }
+  const stopTTS = () => { window.speechSynthesis?.cancel(); setTtsState('idle') }
 
-  const stopTTS = () => {
-    window.speechSynthesis?.cancel()
-    setTtsState('idle')
-  }
-
-  const handleDownload = () => {
-    setDownloaded(true)
-    setTimeout(() => setDownloaded(false), 2500)
-  }
-
-  const handleShare = () => {
-    navigator.clipboard?.writeText(window.location.href).catch(() => {})
-    setShared(true)
-    setTimeout(() => setShared(false), 2000)
-  }
+  const handleDownload = () => { setDownloaded(true); setTimeout(() => setDownloaded(false), 2500) }
+  const handleShare    = () => { navigator.clipboard?.writeText(window.location.href).catch(() => {}); setShared(true); setTimeout(() => setShared(false), 2000) }
 
   const envoyerCommentaire = () => {
     if (!newComment.trim()) return
-    setCommentaires(prev => [{
-      id: Date.now(),
-      auteur: 'Salif Kaboré',
-      initiales: 'SK',
-      temps: 'à l\'instant',
-      texte: newComment.trim(),
-    }, ...prev])
+    setCommentaires(prev => [{ id: Date.now(), auteur: 'Salif Kaboré', initiales: 'SK', temps: "à l'instant", texte: newComment.trim() }, ...prev])
     setNewComment('')
   }
 
+  const toggleCommentLike = (cid) => setCommentLikes(prev => ({ ...prev, [cid]: !prev[cid] }))
+
   const scoreConfig = doc.score >= 80
-    ? { bg: 'var(--color-success-light)', color: 'var(--color-success)', label: 'Excellent' }
+    ? { color: 'var(--color-success)', bg: 'var(--color-success-light)', label: 'Excellent' }
     : doc.score >= 65
-    ? { bg: 'var(--color-gold-light)', color: 'var(--color-gold)', label: 'Correct' }
-    : { bg: 'var(--color-danger-light)', color: 'var(--color-danger)', label: 'Faible' }
+    ? { color: 'var(--color-gold)',    bg: 'var(--color-gold-light)',    label: 'Correct' }
+    : { color: 'var(--color-danger)',  bg: '#FEE2E2',                    label: 'Faible' }
+
+  const pills = [
+    { val: doc.matiere, bg: 'var(--color-primary-light)', color: 'var(--color-primary)' },
+    { val: doc.niveau,  bg: 'var(--color-gold-light)',    color: 'var(--color-gold)' },
+    { val: doc.type,    bg: 'var(--color-success-light)', color: 'var(--color-success)' },
+  ]
 
   return (
-    <div className="flex flex-col gap-5 max-w-4xl">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
 
-      {/* Breadcrumb + Back */}
-      <div className="flex items-center gap-2">
-        <button
-          onClick={() => navigate(-1)}
-          className="text-xs px-3 py-1.5 rounded-lg border font-medium flex items-center gap-1"
-          style={{ borderColor: 'var(--color-border)', color: 'var(--color-muted)' }}>
+      {/* ── Breadcrumb ── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <button onClick={() => navigate(-1)}
+          style={{ fontSize: '13px', padding: '6px 14px', borderRadius: '9px', border: '1.5px solid #E5E7EB', background: '#fff', color: '#6B7280', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
           ← Retour
         </button>
-        <span className="text-xs" style={{ color: 'var(--color-muted)' }}>
-          Fil d'actualité › Lecture
-        </span>
+        <span style={{ fontSize: '13px', color: '#9CA3AF' }}>Fil d'actualité</span>
+        <span style={{ fontSize: '13px', color: '#D1D5DB' }}>›</span>
+        <span style={{ fontSize: '13px', color: '#374151', fontWeight: 600 }}>Lecture</span>
       </div>
 
-      {/* Header document */}
-      <div className="bg-white rounded-xl border p-5" style={{ borderColor: 'var(--color-border)' }}>
-        <div className="flex items-start gap-4">
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center text-sm font-bold text-white flex-shrink-0"
-            style={{ background: doc.univColor }}>
+      {/* ── Header document ── */}
+      <div style={{ ...card, padding: '20px 24px' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
+          {/* Logo université */}
+          <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: doc.univColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 800, color: '#fff', flexShrink: 0, letterSpacing: '-0.5px' }}>
             {doc.univLogo}
           </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-xs mb-1" style={{ color: 'var(--color-muted)' }}>
+
+          {/* Meta */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: '12px', color: '#9CA3AF', marginBottom: '5px' }}>
               {doc.universite} · {doc.date}
             </div>
-            <div className="text-base font-semibold mb-2" style={{ color: 'var(--color-text)' }}>
+            <div style={{ fontSize: '17px', fontWeight: 800, color: '#111827', marginBottom: '10px', lineHeight: 1.35 }}>
               {doc.titre}
             </div>
-            <div className="flex items-center gap-2 flex-wrap mb-3">
-              <button
-                onClick={() => navigate(`/etudiant/professeur/${doc.auteurId}`)}
-                className="text-xs font-medium hover:underline"
-                style={{ color: 'var(--color-primary)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '12px' }}>
+              <button onClick={() => navigate(`/etudiant/professeur/${doc.auteurId}`)}
+                style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-primary)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
                 {doc.auteur}
               </button>
-              <span className="text-xs" style={{ color: 'var(--color-muted)' }}>·</span>
-              {[
-                { val: doc.matiere, bg: 'var(--color-primary-light)', color: 'var(--color-primary-dark)' },
-                { val: doc.niveau, bg: 'var(--color-gold-light)', color: 'var(--color-gold)' },
-                { val: doc.type, bg: 'var(--color-success-light)', color: 'var(--color-success)' },
-              ].map((t, i) => (
-                <span key={i} className="text-xs px-2 py-0.5 rounded-full"
-                  style={{ background: t.bg, color: t.color }}>{t.val}</span>
+              <span style={{ color: '#D1D5DB' }}>·</span>
+              {pills.map((p, i) => (
+                <span key={i} style={{ fontSize: '11px', fontWeight: 600, padding: '3px 10px', borderRadius: '100px', background: p.bg, color: p.color }}>
+                  {p.val}
+                </span>
               ))}
             </div>
-            <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--color-muted)' }}>
-              <span>👁 {doc.vues} vues</span>
-              <span>♥ {liked ? doc.likes + 1 : doc.likes} likes</span>
-              <span>💬 {commentaires.length} commentaires</span>
+            {/* Stats row */}
+            <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+              {[
+                { icon: '👁', val: `${doc.vues} vues` },
+                { icon: '♥', val: `${liked ? doc.likes + 1 : doc.likes} likes` },
+                { icon: '💬', val: `${commentaires.length} commentaires` },
+              ].map((s, i) => (
+                <div key={i} style={{ fontSize: '12px', color: '#6B7280', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <span>{s.icon}</span>
+                  <span>{s.val}</span>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* Score IA */}
-          <div className="flex-shrink-0 text-center p-3 rounded-xl"
-            style={{ background: scoreConfig.bg }}>
-            <div className="text-lg font-bold" style={{ color: scoreConfig.color }}>{doc.score}</div>
-            <div className="text-xs font-medium" style={{ color: scoreConfig.color }}>Score IA</div>
-            <div className="text-xs mt-0.5" style={{ color: scoreConfig.color }}>{scoreConfig.label}</div>
+          {/* Score IA — coin haut droit */}
+          <div style={{ flexShrink: 0, textAlign: 'center', padding: '14px 18px', borderRadius: '14px', background: scoreConfig.bg }}>
+            <div style={{ fontSize: '28px', fontWeight: 900, color: scoreConfig.color, lineHeight: 1 }}>{doc.score}</div>
+            <div style={{ fontSize: '11px', fontWeight: 700, color: scoreConfig.color, marginTop: '3px' }}>Score IA</div>
+            <div style={{ fontSize: '11px', color: scoreConfig.color, opacity: 0.8, marginTop: '2px' }}>{scoreConfig.label}</div>
           </div>
         </div>
       </div>
 
-      <div className="flex gap-4">
+      {/* ── Main layout: viewer | sidebar ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 240px', gap: '18px', alignItems: 'start' }}>
 
-        {/* Contenu principal */}
-        <div className="flex-1 flex flex-col gap-4">
+        {/* ── Left: viewer + comments ── */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
-          {/* Viewer */}
-          <div className="bg-white rounded-xl border overflow-hidden" style={{ borderColor: 'var(--color-border)' }}>
-            {/* Barre viewer */}
-            <div className="px-4 py-2.5 border-b flex items-center justify-between"
-              style={{ borderColor: 'var(--color-border)', background: 'var(--color-bg)' }}>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-medium" style={{ color: 'var(--color-muted)' }}>📄 Visionneuse intégrée</span>
+          {/* Document viewer */}
+          <div style={{ ...card, overflow: 'hidden' }}>
+            {/* Toolbar */}
+            <div style={{ padding: '12px 20px', borderBottom: '1px solid #F3F4F6', background: '#FAFAFA', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: '#374151' }}>📄 Visionneuse intégrée</span>
                 {ttsState !== 'idle' && (
-                  <span className="text-xs px-2 py-0.5 rounded-full font-medium text-white animate-pulse"
-                    style={{ background: 'var(--color-primary)' }}>
+                  <span style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '100px', fontWeight: 600, color: '#fff', background: 'var(--color-primary)', animation: 'pulse 1.5s infinite' }}>
                     🔊 Lecture en cours
                   </span>
                 )}
               </div>
-              <div className="flex gap-1">
-                <div className="w-2.5 h-2.5 rounded-full" style={{ background: 'var(--color-danger)' }} />
-                <div className="w-2.5 h-2.5 rounded-full" style={{ background: 'var(--color-gold)' }} />
-                <div className="w-2.5 h-2.5 rounded-full" style={{ background: 'var(--color-success)' }} />
+              <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
+                <div style={{ width: '11px', height: '11px', borderRadius: '50%', background: 'var(--color-danger)' }} />
+                <div style={{ width: '11px', height: '11px', borderRadius: '50%', background: 'var(--color-gold)' }} />
+                <div style={{ width: '11px', height: '11px', borderRadius: '50%', background: 'var(--color-success)' }} />
               </div>
             </div>
-            {/* Contenu texte */}
-            <div className="p-6 overflow-y-auto" style={{ maxHeight: '420px' }}>
-              <pre className="text-sm leading-7 font-sans whitespace-pre-wrap"
-                style={{ color: 'var(--color-text)' }}>
-                {doc.contenu}
-              </pre>
+
+            {/* Content */}
+            <div style={{ padding: '28px 36px', overflowY: 'auto', maxHeight: '480px' }}>
+              <DocContent text={doc.contenu} />
             </div>
           </div>
 
-          {/* Section commentaires */}
-          <div className="bg-white rounded-xl border p-4" style={{ borderColor: 'var(--color-border)' }}>
-            <div className="text-sm font-semibold mb-4" style={{ color: 'var(--color-text)' }}>
+          {/* Comments section */}
+          <div style={{ ...card, padding: '20px' }}>
+            <div style={{ fontSize: '15px', fontWeight: 700, color: '#111827', marginBottom: '18px' }}>
               💬 Commentaires ({commentaires.length})
             </div>
 
-            {/* Ajouter un commentaire */}
-            <div className="flex gap-3 mb-4">
-              <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
-                style={{ background: 'var(--color-primary-light)', color: 'var(--color-primary-dark)' }}>
+            {/* Input */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+              <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 700, color: '#fff', flexShrink: 0 }}>
                 SK
               </div>
-              <div className="flex-1 flex gap-2">
+              <div style={{ flex: 1, position: 'relative' }}>
                 <input
                   type="text"
                   placeholder="Laisser un commentaire…"
                   value={newComment}
                   onChange={e => setNewComment(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && envoyerCommentaire()}
-                  className="flex-1 px-3 py-2 rounded-lg border text-sm outline-none"
-                  style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
+                  style={{ width: '100%', padding: '10px 60px 10px 16px', borderRadius: '100px', border: '1.5px solid #E5E7EB', fontSize: '13px', color: '#111827', outline: 'none', boxSizing: 'border-box', background: '#F9FAFB' }}
+                  onFocus={e => e.target.style.borderColor = 'var(--color-primary)'}
+                  onBlur={e => e.target.style.borderColor = '#E5E7EB'}
                 />
-                <button
-                  onClick={envoyerCommentaire}
-                  disabled={!newComment.trim()}
-                  className="text-xs px-3 py-2 rounded-lg font-medium text-white"
-                  style={{
-                    background: newComment.trim() ? 'var(--color-primary)' : 'var(--color-border)',
-                    cursor: newComment.trim() ? 'pointer' : 'not-allowed',
-                  }}>
-                  Envoyer
-                </button>
+                {newComment.trim() && (
+                  <button onClick={envoyerCommentaire}
+                    style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', padding: '5px 12px', borderRadius: '100px', background: 'var(--color-primary)', color: '#fff', fontSize: '12px', fontWeight: 700, border: 'none', cursor: 'pointer' }}>
+                    Publier
+                  </button>
+                )}
               </div>
             </div>
 
-            {/* Liste commentaires */}
-            <div className="flex flex-col gap-3">
+            {/* Sort label */}
+            <div style={{ fontSize: '12px', fontWeight: 600, color: '#6B7280', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              Les plus pertinents <span style={{ fontSize: '10px' }}>▾</span>
+            </div>
+
+            {/* List */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
               {commentaires.map(c => (
-                <div key={c.id} className="flex gap-3">
-                  <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
-                    style={{ background: 'var(--color-primary-light)', color: 'var(--color-primary-dark)' }}>
+                <div key={c.id} style={{ display: 'flex', gap: '10px', padding: '10px 0' }}>
+                  {/* Avatar */}
+                  <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'var(--color-primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700, color: 'var(--color-primary)', flexShrink: 0 }}>
                     {c.initiales}
                   </div>
-                  <div className="flex-1">
-                    <div className="flex items-baseline gap-2 mb-0.5">
-                      <span className="text-xs font-semibold" style={{ color: 'var(--color-text)' }}>{c.auteur}</span>
-                      <span className="text-xs" style={{ color: 'var(--color-muted)' }}>{c.temps}</span>
+                  <div style={{ flex: 1 }}>
+                    {/* Bubble */}
+                    <div style={{ background: '#F9FAFB', borderRadius: '0 12px 12px 12px', padding: '10px 14px', marginBottom: '6px' }}>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '4px' }}>
+                        <span style={{ fontSize: '13px', fontWeight: 700, color: '#111827' }}>{c.auteur}</span>
+                        <span style={{ fontSize: '11px', color: '#9CA3AF' }}>{c.temps}</span>
+                      </div>
+                      <p style={{ fontSize: '13px', color: '#374151', lineHeight: 1.65, margin: 0 }}>{c.texte}</p>
                     </div>
-                    <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text)' }}>{c.texte}</p>
+                    {/* Actions */}
+                    <div style={{ display: 'flex', gap: '16px', paddingLeft: '4px' }}>
+                      <button onClick={() => toggleCommentLike(c.id)}
+                        style={{ fontSize: '12px', fontWeight: 600, color: commentLikes[c.id] ? 'var(--color-primary)' : '#9CA3AF', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                        👍 {commentLikes[c.id] ? 'Aimé' : 'J\'aime'}
+                      </button>
+                      <button style={{ fontSize: '12px', fontWeight: 600, color: '#9CA3AF', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                        Répondre
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
           </div>
-
         </div>
 
-        {/* Sidebar actions */}
-        <div className="w-44 flex flex-col gap-3 flex-shrink-0">
+        {/* ── Right sidebar ── */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
 
-          {/* Text-to-Speech */}
-          <div className="bg-white rounded-xl border p-3" style={{ borderColor: 'var(--color-border)' }}>
-            <div className="text-xs font-semibold mb-2" style={{ color: 'var(--color-text)' }}>
-              🤖 IA Text-to-Speech
+          {/* Score de fiabilité */}
+          <div style={{ ...card, padding: '18px' }}>
+            <div style={{ fontSize: '13px', fontWeight: 700, color: '#111827', marginBottom: '14px' }}>
+              🤖 Score de fiabilité
             </div>
-            <button
-              onClick={handleTTS}
-              className="w-full text-xs py-2 rounded-lg font-medium text-white mb-1.5"
-              style={{
-                background: ttsState === 'playing' ? 'var(--color-gold)' : 'var(--color-primary)',
-              }}>
-              {ttsState === 'idle' && '▶ Écouter'}
-              {ttsState === 'playing' && '⏸ Pause'}
-              {ttsState === 'paused' && '▶ Reprendre'}
-            </button>
-            {ttsState !== 'idle' && (
-              <button
-                onClick={stopTTS}
-                className="w-full text-xs py-1.5 rounded-lg border font-medium"
-                style={{ borderColor: 'var(--color-border)', color: 'var(--color-muted)' }}>
-                ⏹ Arrêter
-              </button>
-            )}
-            <p className="text-xs mt-1.5" style={{ color: 'var(--color-muted)' }}>
-              L'IA lit le document à voix haute
-            </p>
-          </div>
-
-          {/* Actions */}
-          <div className="bg-white rounded-xl border p-3 flex flex-col gap-2"
-            style={{ borderColor: 'var(--color-border)' }}>
-            <button
-              onClick={() => setLiked(l => !l)}
-              className="w-full text-xs py-2 rounded-lg border font-medium transition-all"
-              style={{
-                borderColor: liked ? 'var(--color-danger)' : 'var(--color-border)',
-                background: liked ? 'var(--color-danger-light)' : 'transparent',
-                color: liked ? 'var(--color-danger)' : 'var(--color-muted)',
-              }}>
-              {liked ? '♥ Aimé' : '♡ Liker'}
-            </button>
-
-            <button
-              onClick={handleDownload}
-              className="w-full text-xs py-2 rounded-lg font-medium text-white"
-              style={{ background: downloaded ? 'var(--color-success)' : 'var(--color-primary)' }}>
-              {downloaded ? '✓ Téléchargé' : '⬇ Télécharger'}
-            </button>
-
-            <button
-              onClick={handleShare}
-              className="w-full text-xs py-2 rounded-lg border font-medium"
-              style={{ borderColor: 'var(--color-border)', color: shared ? 'var(--color-success)' : 'var(--color-muted)' }}>
-              {shared ? '✓ Lien copié' : '🔗 Partager'}
-            </button>
-          </div>
-
-          {/* Info score */}
-          <div className="bg-white rounded-xl border p-3" style={{ borderColor: 'var(--color-border)' }}>
-            <div className="text-xs font-semibold mb-2" style={{ color: 'var(--color-text)' }}>
-              Score de fiabilité
+            {/* Big score */}
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '4px', marginBottom: '10px' }}>
+              <span style={{ fontSize: '38px', fontWeight: 900, color: scoreConfig.color, lineHeight: 1 }}>{doc.score}</span>
+              <span style={{ fontSize: '14px', color: '#9CA3AF', marginBottom: '4px' }}>/100</span>
             </div>
-            <div className="text-2xl font-bold mb-1" style={{ color: scoreConfig.color }}>
-              {doc.score}<span className="text-sm font-normal">/100</span>
+            {/* Progress bar */}
+            <div style={{ height: '6px', borderRadius: '100px', background: '#F3F4F6', marginBottom: '14px', overflow: 'hidden' }}>
+              <div style={{ height: '100%', borderRadius: '100px', background: scoreConfig.color, width: `${doc.score}%`, transition: 'width 0.8s ease' }} />
             </div>
-            <div className="h-1.5 rounded-full mb-2" style={{ background: 'var(--color-border)' }}>
-              <div className="h-full rounded-full" style={{ width: `${doc.score}%`, background: scoreConfig.color }} />
-            </div>
-            <div className="flex flex-col gap-1">
-              {[
-                { label: 'Pertinence', val: 96 },
-                { label: 'Plagiat', val: 0, inverse: true },
-                { label: 'Clarté', val: 88 },
-              ].map((item, i) => (
-                <div key={i} className="flex justify-between text-xs">
-                  <span style={{ color: 'var(--color-muted)' }}>{item.label}</span>
-                  <span className="font-medium" style={{
-                    color: item.inverse
-                      ? (item.val === 0 ? 'var(--color-success)' : 'var(--color-danger)')
-                      : 'var(--color-text)',
-                  }}>
+            {/* Details */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {doc.scoreDetails.map((item, i) => (
+                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '12px', color: '#6B7280' }}>{item.label}</span>
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: item.inverse ? (item.val === 0 ? 'var(--color-success)' : 'var(--color-danger)') : '#111827' }}>
                     {item.inverse ? (item.val === 0 ? 'Aucun' : `${item.val}%`) : `${item.val}%`}
                   </span>
                 </div>
               ))}
+            </div>
+          </div>
+
+          {/* IA Text-to-Speech */}
+          <div style={{ ...card, padding: '18px' }}>
+            <div style={{ fontSize: '13px', fontWeight: 700, color: '#111827', marginBottom: '12px' }}>
+              🔊 IA Text-to-Speech
+            </div>
+            <button onClick={handleTTS}
+              style={{ width: '100%', padding: '11px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: 700, color: '#fff', marginBottom: '8px', transition: 'opacity 0.2s',
+                background: ttsState === 'playing' ? 'var(--color-gold)' : 'var(--color-primary)',
+              }}
+              onMouseEnter={e => e.currentTarget.style.opacity = '0.88'}
+              onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
+              {ttsState === 'idle' && '▶  Écouter'}
+              {ttsState === 'playing' && '⏸  Pause'}
+              {ttsState === 'paused' && '▶  Reprendre'}
+            </button>
+            {ttsState !== 'idle' && (
+              <button onClick={stopTTS}
+                style={{ width: '100%', padding: '9px', borderRadius: '10px', border: '1.5px solid #E5E7EB', background: '#fff', fontSize: '12px', fontWeight: 600, color: '#6B7280', cursor: 'pointer', marginBottom: '8px' }}>
+                ⏹  Arrêter
+              </button>
+            )}
+            <p style={{ fontSize: '12px', color: '#9CA3AF', margin: 0, lineHeight: 1.5 }}>
+              L'IA lit le document à voix haute en français.
+            </p>
+          </div>
+
+          {/* Actions */}
+          <div style={{ ...card, padding: '18px' }}>
+            <div style={{ fontSize: '13px', fontWeight: 700, color: '#111827', marginBottom: '12px' }}>
+              Actions
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {/* Liker */}
+              <button onClick={() => setLiked(l => !l)}
+                style={{ width: '100%', padding: '10px', borderRadius: '10px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
+                  border: liked ? '1.5px solid var(--color-danger)' : '1.5px solid #E5E7EB',
+                  background: liked ? '#FEE2E2' : '#fff',
+                  color: liked ? 'var(--color-danger)' : '#6B7280',
+                }}>
+                {liked ? '♥  Aimé' : '♡  Liker'}
+              </button>
+
+              {/* Enregistrer */}
+              <button onClick={() => setSaved(s => !s)}
+                style={{ width: '100%', padding: '10px', borderRadius: '10px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
+                  border: saved ? '1.5px solid var(--color-primary)' : '1.5px solid #E5E7EB',
+                  background: saved ? 'var(--color-primary-light)' : '#fff',
+                  color: saved ? 'var(--color-primary)' : '#6B7280',
+                }}>
+                {saved ? '🔖  Enregistré' : '🔖  Enregistrer'}
+              </button>
+
+              {/* Télécharger */}
+              <button onClick={handleDownload}
+                style={{ width: '100%', padding: '10px', borderRadius: '10px', fontSize: '13px', fontWeight: 700, border: 'none', cursor: 'pointer', transition: 'all 0.15s', color: '#fff',
+                  background: downloaded ? 'var(--color-success)' : 'var(--color-primary)',
+                }}>
+                {downloaded ? '✓  Téléchargé' : '⬇  Télécharger'}
+              </button>
+
+              {/* Partager */}
+              <button onClick={handleShare}
+                style={{ width: '100%', padding: '10px', borderRadius: '10px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
+                  border: '1.5px solid #E5E7EB', background: '#fff',
+                  color: shared ? 'var(--color-success)' : '#6B7280',
+                }}>
+                {shared ? '✓  Lien copié' : '🔗  Partager'}
+              </button>
             </div>
           </div>
 
