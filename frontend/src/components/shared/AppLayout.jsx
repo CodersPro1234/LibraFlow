@@ -8,7 +8,7 @@ const AppLayout = ({ title }) => {
       <Sidebar />
       <div className="flex flex-col flex-1 overflow-hidden">
         <Topbar title={title} />
-        <main className="flex-1 overflow-y-auto p-7">
+        <main className="flex-1 overflow-y-auto" style={{ padding: '28px 40px' }}>
           <Outlet />
         </main>
       </div>

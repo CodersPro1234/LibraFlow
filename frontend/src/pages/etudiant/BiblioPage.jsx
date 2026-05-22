@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import DocCard from '../../components/shared/DocCard'
 
 const favoris = [
   { id: 1, univLogo: 'UJK', univColor: '#3B7FE1', universite: 'Université Joseph Ki-Zerbo', auteur: 'Prof. Ouédraogo Mamadou', titre: 'Droit Constitutionnel — Chapitre 4', matiere: 'Droit Constitutionnel', niveau: 'Licence 2', type: 'Cours', score: 94, date: '18 Mai 2026' },
@@ -25,54 +26,6 @@ const TABS = [
   { key: 'Historique', icon: '🕓', color: 'var(--color-muted)' },
 ]
 
-const scoreStyle = (s) => s >= 75
-  ? { bg: 'var(--color-success-light)', color: 'var(--color-success)' }
-  : { bg: 'var(--color-gold-light)', color: 'var(--color-gold)' }
-
-const DocCard = ({ doc, onSupprimer, showOffline, showTemps }) => {
-  const sc = scoreStyle(doc.score)
-  return (
-    <div style={{ background: '#fff', borderRadius: '16px', border: '1px solid #E5E7EB', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
-      <div style={{ height: '3px', background: doc.univColor }} />
-      <div style={{ padding: '16px 18px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-          <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: doc.univColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 800, color: '#fff', flexShrink: 0 }}>
-            {doc.univLogo}
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: '13px', fontWeight: 700, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.universite}</div>
-            <div style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '1px' }}>{doc.auteur} · {showTemps ? doc.temps : doc.date}</div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-            {showOffline && <span style={{ fontSize: '11px', fontWeight: 600, padding: '3px 8px', borderRadius: '100px', background: 'var(--color-success-light)', color: 'var(--color-success)' }}>Offline</span>}
-            <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '100px', background: sc.bg, color: sc.color }}>IA {doc.score}</span>
-          </div>
-        </div>
-
-        <div style={{ fontSize: '15px', fontWeight: 800, color: '#111827', lineHeight: 1.3, marginBottom: '10px' }}>{doc.titre}</div>
-
-        <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', marginBottom: '14px' }}>
-          <span style={{ fontSize: '11px', fontWeight: 600, padding: '3px 9px', borderRadius: '100px', background: 'var(--color-primary-light)', color: 'var(--color-primary)' }}>{doc.matiere}</span>
-          <span style={{ fontSize: '11px', fontWeight: 600, padding: '3px 9px', borderRadius: '100px', background: 'var(--color-gold-light)', color: 'var(--color-gold)' }}>{doc.niveau}</span>
-          <span style={{ fontSize: '11px', fontWeight: 600, padding: '3px 9px', borderRadius: '100px', background: 'var(--color-success-light)', color: 'var(--color-success)' }}>{doc.type}</span>
-          {showOffline && doc.taille && <span style={{ fontSize: '11px', fontWeight: 600, padding: '3px 9px', borderRadius: '100px', background: '#F3F4F6', color: '#6B7280' }}>{doc.taille}</span>}
-        </div>
-
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button style={{ padding: '8px 16px', borderRadius: '9px', background: 'var(--color-primary)', color: '#fff', fontSize: '13px', fontWeight: 700, border: 'none', cursor: 'pointer' }}>
-            📖 Lire
-          </button>
-          {onSupprimer && (
-            <button onClick={() => onSupprimer(doc.id)}
-              style={{ padding: '8px 14px', borderRadius: '9px', border: '1.5px solid var(--color-danger)', background: '#fff', color: 'var(--color-danger)', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
-              🗑 Supprimer
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-}
 
 const Empty = ({ icon, text, sub }) => (
   <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--color-muted)' }}>
@@ -113,7 +66,9 @@ const BiblioPage = () => {
       {tab === 'Favoris' && (
         favoris.length === 0
           ? <Empty icon="♥" text="Aucun favori" />
-          : favoris.map(doc => <DocCard key={doc.id} doc={doc} />)
+          : <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {favoris.map(doc => <DocCard key={doc.id} doc={doc} meta={doc.date} />)}
+            </div>
       )}
 
       {/* Téléchargés */}
@@ -139,7 +94,18 @@ const BiblioPage = () => {
           )}
           {downloads.length === 0
             ? <Empty icon="⬇" text="Aucun fichier téléchargé" sub="Télécharge des docs pour les lire hors connexion" />
-            : downloads.map(doc => <DocCard key={doc.id} doc={doc} showOffline onSupprimer={supprimerDownload} />)
+            : <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {downloads.map(doc => (
+                  <DocCard key={doc.id} doc={doc} meta={doc.date} showOffline
+                    actions={
+                      <>
+                        <button onClick={() => {}} style={{ padding: '9px 18px', borderRadius: '10px', background: 'var(--color-primary)', color: '#fff', fontSize: '13px', fontWeight: 700, border: 'none', cursor: 'pointer' }}>📖 Lire</button>
+                        <button onClick={() => supprimerDownload(doc.id)} style={{ padding: '9px 16px', borderRadius: '10px', border: '1.5px solid var(--color-danger)', background: '#fff', color: 'var(--color-danger)', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>🗑 Supprimer</button>
+                      </>
+                    }
+                  />
+                ))}
+              </div>
           }
         </>
       )}
@@ -148,7 +114,9 @@ const BiblioPage = () => {
       {tab === 'Historique' && (
         historique.length === 0
           ? <Empty icon="🕓" text="Aucun historique" />
-          : historique.map(doc => <DocCard key={doc.id} doc={doc} showTemps />)
+          : <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {historique.map(doc => <DocCard key={doc.id} doc={doc} meta={doc.temps} />)}
+            </div>
       )}
     </div>
   )

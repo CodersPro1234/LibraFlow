@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import DocCard from '../../components/shared/DocCard'
 
 const initialDocs = [
   { id: 1, titre: 'Droit Constitutionnel — Chapitre 4', matiere: 'Droit Constitutionnel', niveau: 'Licence 2', type: 'Cours',   vues: 412, likes: 24, telechargements: 98,  commentaires: 8,  score: 94, date: '18 Mai 2026' },
@@ -41,28 +42,14 @@ const MesPublicationsPage = () => {
 
       {/* Liste */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        {docs.map((doc) => {
-          const sc = scoreColor(doc.score)
-          return (
-            <div key={doc.id} style={{ background: '#fff', borderRadius: '16px', border: '1px solid #E5E7EB', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', padding: '20px' }}>
-
-              {/* Top */}
-              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', marginBottom: '14px' }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: '15px', fontWeight: 700, color: '#111827', marginBottom: '8px' }}>{doc.titre}</div>
-                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: '11px', fontWeight: 600, padding: '3px 10px', borderRadius: '100px', background: 'var(--color-primary-light)', color: 'var(--color-primary)' }}>{doc.matiere}</span>
-                    <span style={{ fontSize: '11px', fontWeight: 600, padding: '3px 10px', borderRadius: '100px', background: 'var(--color-gold-light)', color: 'var(--color-gold)' }}>{doc.niveau}</span>
-                    <span style={{ fontSize: '11px', fontWeight: 600, padding: '3px 10px', borderRadius: '100px', background: 'var(--color-success-light)', color: 'var(--color-success)' }}>{doc.type}</span>
-                  </div>
-                </div>
-                <span style={{ fontSize: '11px', fontWeight: 700, padding: '4px 12px', borderRadius: '100px', flexShrink: 0, background: sc.bg, color: sc.color }}>
-                  ✓ {doc.score}
-                </span>
-              </div>
-
-              {/* Mini stats */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '8px', marginBottom: '14px' }}>
+        {docs.map((doc) => (
+          <DocCard
+            key={doc.id}
+            doc={doc}
+            meta={`Publié le ${doc.date}`}
+            hideHeader
+            extraContent={
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '8px' }}>
                 {[
                   { label: 'Vues',    value: doc.vues,            icon: '👁' },
                   { label: 'Likes',   value: doc.likes,           icon: '♥' },
@@ -76,37 +63,28 @@ const MesPublicationsPage = () => {
                   </div>
                 ))}
               </div>
-
-              {/* Footer */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            }
+            actions={
+              <>
                 <span style={{ fontSize: '12px', color: '#9CA3AF' }}>Publié le {doc.date}</span>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button style={{ padding: '7px 12px', borderRadius: '9px', border: '1.5px solid #E5E7EB', background: '#fff', color: '#6B7280', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
-                    ✏️ Éditer
+                <div style={{ flex: 1 }} />
+                <button style={{ padding: '8px 14px', borderRadius: '9px', border: '1.5px solid #E5E7EB', background: '#fff', color: '#6B7280', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+                  ✏️ Éditer
+                </button>
+                {confirm === doc.id ? (
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <button onClick={() => supprimer(doc.id)} style={{ padding: '8px 14px', borderRadius: '9px', background: 'var(--color-danger)', color: '#fff', fontSize: '13px', fontWeight: 700, border: 'none', cursor: 'pointer' }}>Confirmer</button>
+                    <button onClick={() => setConfirm(null)} style={{ padding: '8px 12px', borderRadius: '9px', border: '1.5px solid #E5E7EB', background: '#fff', color: '#6B7280', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>Non</button>
+                  </div>
+                ) : (
+                  <button onClick={() => setConfirm(doc.id)} style={{ padding: '8px 14px', borderRadius: '9px', border: '1.5px solid var(--color-danger)', background: '#fff', color: 'var(--color-danger)', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+                    Supprimer
                   </button>
-                  {confirm === doc.id ? (
-                    <div style={{ display: 'flex', gap: '6px' }}>
-                      <button onClick={() => supprimer(doc.id)}
-                        style={{ padding: '7px 12px', borderRadius: '9px', background: 'var(--color-danger)', color: '#fff', fontSize: '12px', fontWeight: 700, border: 'none', cursor: 'pointer' }}>
-                        Confirmer
-                      </button>
-                      <button onClick={() => setConfirm(null)}
-                        style={{ padding: '7px 10px', borderRadius: '9px', border: '1.5px solid #E5E7EB', background: '#fff', color: '#6B7280', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
-                        Non
-                      </button>
-                    </div>
-                  ) : (
-                    <button onClick={() => setConfirm(doc.id)}
-                      style={{ padding: '7px 12px', borderRadius: '9px', border: '1.5px solid var(--color-danger)', background: '#fff', color: 'var(--color-danger)', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
-                      Supprimer
-                    </button>
-                  )}
-                </div>
-              </div>
-
-            </div>
-          )
-        })}
+                )}
+              </>
+            }
+          />
+        ))}
 
         {docs.length === 0 && (
           <div style={{ textAlign: 'center', padding: '60px 20px', color: '#9CA3AF' }}>
