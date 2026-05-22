@@ -246,6 +246,99 @@ export async function suspendreEtudiant(
   logger.info({ universiteId, etudiantId, motif }, 'Étudiant suspendu');
 }
 
+export async function reactiverEtudiant(universiteId: string, etudiantId: string): Promise<void> {
+  const { data: etudiant, error } = await supabaseAdmin
+    .from('etudiants')
+    .select('id, universite_id, statut')
+    .eq('id', etudiantId)
+    .maybeSingle();
+
+  if (error) throw new ValidationError(error.message);
+  if (!etudiant) throw new NotFoundError('Étudiant');
+  if ((etudiant as { universite_id: string }).universite_id !== universiteId) {
+    throw new ForbiddenError("Cet étudiant n'appartient pas à votre université");
+  }
+  if ((etudiant as { statut: string }).statut !== 'suspendu') {
+    throw new ValidationError('Seul un étudiant suspendu peut être réactivé');
+  }
+
+  const { error: updateError } = await supabaseAdmin
+    .from('etudiants')
+    .update({ statut: 'actif' })
+    .eq('id', etudiantId);
+
+  if (updateError) throw new ValidationError(updateError.message);
+
+  await auditRepo.createAuditLog({
+    action: 'reactiver_etudiant',
+    acteur_id: universiteId,
+    acteur_role: 'universite',
+    cible_id: etudiantId,
+    cible_type: 'etudiant',
+  });
+
+  logger.info({ universiteId, etudiantId }, 'Étudiant réactivé');
+}
+
+export async function supprimerPublication(universiteId: string, publicationId: string): Promise<void> {
+  const { data: pub, error } = await supabaseAdmin
+    .from('publications')
+    .select('id, universite_id, statut_moderation')
+    .eq('id', publicationId)
+    .maybeSingle();
+
+  if (error) throw new ValidationError(error.message);
+  if (!pub) throw new NotFoundError('Publication');
+  if ((pub as { universite_id: string }).universite_id !== universiteId) {
+    throw new ForbiddenError("Cette publication n'appartient pas à votre université");
+  }
+
+  const { error: updateError } = await supabaseAdmin
+    .from('publications')
+    .update({ statut_moderation: 'rejetee' })
+    .eq('id', publicationId);
+
+  if (updateError) throw new ValidationError(updateError.message);
+
+  await auditRepo.createAuditLog({
+    action: 'supprimer_publication_universite',
+    acteur_id: universiteId,
+    acteur_role: 'universite',
+    cible_id: publicationId,
+    cible_type: 'publication',
+  });
+
+  logger.info({ universiteId, publicationId }, 'Publication supprimée par université');
+}
+
+export async function getTopPublications(universiteId: string): Promise<unknown[]> {
+  const { data, error } = await supabaseAdmin
+    .from('publications')
+    .select('id, titre, matiere, niveau, type_doc, vues_count, likes_count, telechargements_count, commentaires_count, created_at, professeur:professeurs(nom_complet)')
+    .eq('universite_id', universiteId)
+    .eq('statut_moderation', 'validee')
+    .order('likes_count', { ascending: false })
+    .limit(10);
+
+  if (error) throw new ValidationError(error.message);
+  return data ?? [];
+}
+
+export async function getEvolutionMensuelle(universiteId: string): Promise<unknown[]> {
+  const { data, error } = await supabaseAdmin
+    .from('mv_evolution_mensuelle')
+    .select('*')
+    .eq('universite_id', universiteId)
+    .order('mois', { ascending: true })
+    .limit(12);
+
+  if (error) {
+    logger.warn({ err: error, universiteId }, 'mv_evolution_mensuelle indisponible pour université');
+    return [];
+  }
+  return data ?? [];
+}
+
 // ── Publications université ───────────────────────────────────────────────────
 
 export async function listPublications(params: {

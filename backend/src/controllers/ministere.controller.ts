@@ -71,6 +71,24 @@ export async function getStatistiques(_req: Request, res: Response): Promise<voi
   res.json(data);
 }
 
+/** GET /api/v1/ministere/carte */
+export async function getCarte(_req: Request, res: Response): Promise<void> {
+  const data = await minService.getCarte();
+  res.json({ data });
+}
+
+/** GET /api/v1/ministere/statistiques-nationales */
+export async function getStatistiquesNationales(_req: Request, res: Response): Promise<void> {
+  const data = await minService.getStatistiquesNationales();
+  res.json(data);
+}
+
+/** GET /api/v1/ministere/statistiques-nationales/region */
+export async function getStatistiquesParRegion(_req: Request, res: Response): Promise<void> {
+  const data = await minService.getStatistiquesParRegion();
+  res.json({ data });
+}
+
 /** GET /api/v1/ministere/signalements */
 export async function listSignalements(req: Request, res: Response): Promise<void> {
   const { cursor, limit } = req.query as { cursor?: string; limit?: string };

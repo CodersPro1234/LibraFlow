@@ -68,3 +68,43 @@ export async function getBibliotheque(req: Request, res: Response): Promise<void
   const result = await pubService.getBibliotheque(req.user!.id);
   res.json(result);
 }
+
+/** GET /api/v1/me/publications/stats */
+export async function getMesPublicationsStats(req: Request, res: Response): Promise<void> {
+  const data = await meService.getMesPublicationsStats(req.user!.id);
+  res.json(data);
+}
+
+/** GET /api/v1/me/history */
+export async function getHistorique(req: Request, res: Response): Promise<void> {
+  const { cursor } = req.query as { cursor?: string };
+  const result = await meService.getHistorique(req.user!.id, cursor);
+  res.json(result);
+}
+
+/** POST /api/v1/me/history */
+export async function addHistorique(req: Request, res: Response): Promise<void> {
+  const { publication_id, type_action } = req.body as { publication_id: string; type_action?: 'vue' | 'telecharge' | 'ecoute' };
+  await meService.addHistorique(req.user!.id, publication_id, type_action ?? 'vue');
+  res.status(204).send();
+}
+
+/** GET /api/v1/me/downloads */
+export async function getDownloads(req: Request, res: Response): Promise<void> {
+  const { cursor } = req.query as { cursor?: string };
+  const result = await meService.getDownloads(req.user!.id, cursor);
+  res.json(result);
+}
+
+/** GET /api/v1/me/abonnes — professeur uniquement */
+export async function getAbonnes(req: Request, res: Response): Promise<void> {
+  const { cursor } = req.query as { cursor?: string };
+  const result = await meService.getAbonnes(req.user!.id, cursor);
+  res.json(result);
+}
+
+/** GET /api/v1/me/interactions-recentes — professeur uniquement */
+export async function getInteractionsRecentes(req: Request, res: Response): Promise<void> {
+  const data = await meService.getInteractionsRecentes(req.user!.id);
+  res.json(data);
+}

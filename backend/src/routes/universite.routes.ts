@@ -49,4 +49,16 @@ router.get('/publications', asyncHandler(univController.listPublications));
 /** GET /api/v1/universite/publications/:id */
 router.get('/publications/:id', asyncHandler(univController.getPublication));
 
+/** PATCH /api/v1/universite/etudiants/:id/reactiver */
+router.patch('/etudiants/:id/reactiver', asyncHandler(univController.reactiverEtudiant));
+
+/** DELETE /api/v1/universite/publications/:id/supprimer */
+router.delete('/publications/:id/supprimer', asyncHandler(univController.supprimerPublication));
+
+/** GET /api/v1/universite/top */
+router.get('/top', asyncHandler(univController.getTopPublications));
+
+/** GET /api/v1/universite/evolution-mensuelle */
+router.get('/evolution-mensuelle', asyncHandler(univController.getEvolutionMensuelle));
+
 export default router;

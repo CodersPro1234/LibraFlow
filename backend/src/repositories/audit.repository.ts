@@ -4,7 +4,8 @@ import type { Role } from '../types';
 type AuditAction =
   | 'approuver_universite' | 'rejeter_universite' | 'suspendre_universite'
   | 'valider_professeur' | 'rejeter_professeur' | 'suspendre_professeur'
-  | 'supprimer_publication' | 'innocenter_signalement' | 'suspendre_etudiant';
+  | 'supprimer_publication' | 'innocenter_signalement'
+  | 'suspendre_etudiant' | 'reactiver_etudiant' | 'supprimer_publication_universite';
 
 export interface AuditLogData {
   action: AuditAction;

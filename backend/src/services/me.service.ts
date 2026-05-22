@@ -4,6 +4,7 @@ import { supabaseAdmin } from '../config/supabase';
 import { AuthError, NotFoundError, ValidationError } from '../utils/errors';
 import logger from '../utils/logger';
 import type { Role } from '../types';
+import type { HistoriqueLectureRow } from '../types/db';
 
 // ── Profil ────────────────────────────────────────────────────────────────────
 
@@ -134,4 +135,155 @@ export async function changePassword(
   if (updateError) throw new ValidationError(`Erreur mise à jour mot de passe : ${updateError.message}`);
 
   logger.info({ userId, role }, 'Mot de passe changé');
+}
+
+// ── Stats publications professeur ─────────────────────────────────────────────
+
+export async function getMesPublicationsStats(professeurId: string): Promise<Record<string, unknown>> {
+  const { data, error } = await supabaseAdmin
+    .from('publications')
+    .select('vues_count, likes_count, telechargements_count, commentaires_count')
+    .eq('professeur_id', professeurId);
+
+  if (error) throw new ValidationError(error.message);
+
+  const rows = data ?? [];
+  const stats = rows.reduce(
+    (acc, row) => ({
+      total_vues: acc.total_vues + (row.vues_count ?? 0),
+      total_likes: acc.total_likes + (row.likes_count ?? 0),
+      total_telechargements: acc.total_telechargements + (row.telechargements_count ?? 0),
+      total_commentaires: acc.total_commentaires + (row.commentaires_count ?? 0),
+    }),
+    { total_vues: 0, total_likes: 0, total_telechargements: 0, total_commentaires: 0 }
+  );
+
+  return { ...stats, total_publications: rows.length };
+}
+
+// ── Historique de lecture étudiant ────────────────────────────────────────────
+
+export async function getHistorique(
+  etudiantId: string,
+  cursor?: string
+): Promise<{ data: HistoriqueLectureRow[]; cursor_next: string | null; has_more: boolean }> {
+  const limit = 20;
+
+  let query = supabaseAdmin
+    .from('historique_lecture')
+    .select('*, publication:publications(id, titre, matiere, niveau, type_doc, pdf_url, professeur:professeurs(nom_complet))')
+    .eq('etudiant_id', etudiantId)
+    .order('created_at', { ascending: false })
+    .limit(limit + 1);
+
+  if (cursor) query = query.lt('created_at', cursor);
+
+  const { data, error } = await query;
+  if (error) throw new ValidationError(error.message);
+
+  const rows = (data ?? []) as HistoriqueLectureRow[];
+  const has_more = rows.length > limit;
+  if (has_more) rows.pop();
+  const cursor_next = has_more && rows.length > 0 ? rows[rows.length - 1]!.created_at : null;
+
+  return { data: rows, cursor_next, has_more };
+}
+
+export async function addHistorique(
+  etudiantId: string,
+  publicationId: string,
+  typeAction: 'vue' | 'telecharge' | 'ecoute' = 'vue'
+): Promise<void> {
+  const { error } = await supabaseAdmin
+    .from('historique_lecture')
+    .upsert(
+      { etudiant_id: etudiantId, publication_id: publicationId, type_action: typeAction, created_at: new Date().toISOString() },
+      { onConflict: 'etudiant_id,publication_id,type_action', ignoreDuplicates: false }
+    );
+
+  if (error) throw new ValidationError(error.message);
+}
+
+// ── Téléchargements étudiant ──────────────────────────────────────────────────
+
+export async function getDownloads(
+  etudiantId: string,
+  cursor?: string
+): Promise<{ data: HistoriqueLectureRow[]; cursor_next: string | null; has_more: boolean }> {
+  const limit = 20;
+
+  let query = supabaseAdmin
+    .from('historique_lecture')
+    .select('*, publication:publications(id, titre, matiere, niveau, type_doc, pdf_url, professeur:professeurs(nom_complet), universite:universites(nom_officiel))')
+    .eq('etudiant_id', etudiantId)
+    .eq('type_action', 'telecharge')
+    .order('created_at', { ascending: false })
+    .limit(limit + 1);
+
+  if (cursor) query = query.lt('created_at', cursor);
+
+  const { data, error } = await query;
+  if (error) throw new ValidationError(error.message);
+
+  const rows = (data ?? []) as HistoriqueLectureRow[];
+  const has_more = rows.length > limit;
+  if (has_more) rows.pop();
+  const cursor_next = has_more && rows.length > 0 ? rows[rows.length - 1]!.created_at : null;
+
+  return { data: rows, cursor_next, has_more };
+}
+
+// ── Abonnés du professeur (paginés) ──────────────────────────────────────────
+
+export async function getAbonnes(
+  professeurId: string,
+  cursor?: string
+): Promise<{ data: unknown[]; cursor_next: string | null; has_more: boolean }> {
+  const limit = 20;
+
+  let query = supabaseAdmin
+    .from('abonnements')
+    .select('id, follower_id, follower_role, created_at')
+    .eq('cible_id', professeurId)
+    .eq('cible_type', 'professeur')
+    .order('created_at', { ascending: false })
+    .limit(limit + 1);
+
+  if (cursor) query = query.lt('created_at', cursor);
+
+  const { data, error } = await query;
+  if (error) throw new ValidationError(error.message);
+
+  const rows = data ?? [];
+  const has_more = rows.length > limit;
+  if (has_more) rows.pop();
+  const cursor_next = has_more && rows.length > 0
+    ? (rows[rows.length - 1] as { created_at: string }).created_at
+    : null;
+
+  return { data: rows, cursor_next, has_more };
+}
+
+// ── Interactions récentes sur les publications du professeur ──────────────────
+
+export async function getInteractionsRecentes(professeurId: string): Promise<Record<string, unknown>> {
+  const [likesResult, commentairesResult] = await Promise.all([
+    supabaseAdmin
+      .from('likes')
+      .select('id, user_id, user_role, created_at, publication:publications!inner(id, titre, professeur_id)')
+      .eq('publication.professeur_id', professeurId)
+      .order('created_at', { ascending: false })
+      .limit(10),
+    supabaseAdmin
+      .from('commentaires')
+      .select('id, user_id, user_role, contenu, created_at, publication:publications!inner(id, titre, professeur_id)')
+      .eq('publication.professeur_id', professeurId)
+      .order('created_at', { ascending: false })
+      .limit(10),
+  ]);
+
+  return {
+    likes_recents: likesResult.data ?? [],
+    commentaires_recents: commentairesResult.data ?? [],
+  };
 }

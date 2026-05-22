@@ -76,6 +76,32 @@ export async function getPublication(req: Request, res: Response): Promise<void>
   res.json(data);
 }
 
+/** PATCH /api/v1/universite/etudiants/:id/reactiver */
+export async function reactiverEtudiant(req: Request, res: Response): Promise<void> {
+  const { id } = req.params as { id: string };
+  await univService.reactiverEtudiant(getUniversiteId(req), id);
+  res.json({ message: 'Étudiant réactivé.' });
+}
+
+/** DELETE /api/v1/universite/publications/:id/supprimer */
+export async function supprimerPublication(req: Request, res: Response): Promise<void> {
+  const { id } = req.params as { id: string };
+  await univService.supprimerPublication(getUniversiteId(req), id);
+  res.status(204).send();
+}
+
+/** GET /api/v1/universite/top */
+export async function getTopPublications(req: Request, res: Response): Promise<void> {
+  const data = await univService.getTopPublications(getUniversiteId(req));
+  res.json({ data });
+}
+
+/** GET /api/v1/universite/evolution-mensuelle */
+export async function getEvolutionMensuelle(req: Request, res: Response): Promise<void> {
+  const data = await univService.getEvolutionMensuelle(getUniversiteId(req));
+  res.json({ data });
+}
+
 /** PATCH /api/v1/universite/professeurs/:id/valider */
 export async function validerProfesseur(req: Request, res: Response): Promise<void> {
   const universiteId = getUniversiteId(req);

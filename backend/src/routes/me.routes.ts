@@ -32,4 +32,22 @@ router.get('/recommendations', asyncHandler(meController.getRecommendations));
 /** GET /api/v1/me/library — étudiant */
 router.get('/library', asyncHandler(meController.getBibliotheque));
 
+/** GET /api/v1/me/publications/stats — professeur uniquement */
+router.get('/publications/stats', asyncHandler(meController.getMesPublicationsStats));
+
+/** GET /api/v1/me/history — étudiant */
+router.get('/history', asyncHandler(meController.getHistorique));
+
+/** POST /api/v1/me/history — étudiant */
+router.post('/history', asyncHandler(meController.addHistorique));
+
+/** GET /api/v1/me/downloads — étudiant */
+router.get('/downloads', asyncHandler(meController.getDownloads));
+
+/** GET /api/v1/me/abonnes — professeur */
+router.get('/abonnes', asyncHandler(meController.getAbonnes));
+
+/** GET /api/v1/me/interactions-recentes — professeur */
+router.get('/interactions-recentes', asyncHandler(meController.getInteractionsRecentes));
+
 export default router;

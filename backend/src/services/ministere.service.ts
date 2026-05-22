@@ -238,6 +238,61 @@ export async function getStatistiques(): Promise<Record<string, unknown>> {
   };
 }
 
+// ── Carte & stats nationales ──────────────────────────────────────────────────
+
+export async function getCarte(): Promise<unknown[]> {
+  const { data, error } = await supabaseAdmin
+    .from('universites')
+    .select('id, nom_officiel, region, latitude, longitude, statut, logo_url')
+    .eq('statut', 'approuvee')
+    .not('latitude', 'is', null)
+    .not('longitude', 'is', null);
+
+  if (error) throw new ValidationError(error.message);
+  return data ?? [];
+}
+
+export async function getStatistiquesNationales(): Promise<Record<string, unknown>> {
+  const [globalResult, evolutionResult, topUniversitesResult, topDocumentsResult, topMatieresResult] = await Promise.all([
+    supabaseAdmin.from('mv_ministere_stats').select('*').maybeSingle(),
+    supabaseAdmin.from('mv_evolution_mensuelle').select('*').order('mois', { ascending: true }).limit(12),
+    supabaseAdmin.from('mv_top_universites').select('*').limit(5),
+    supabaseAdmin.from('mv_top_documents').select('*').limit(10),
+    supabaseAdmin.from('mv_top_matieres').select('*').limit(10),
+  ]);
+
+  return {
+    global: globalResult.data ?? {},
+    evolution_mensuelle: evolutionResult.data ?? [],
+    top_universites: topUniversitesResult.data ?? [],
+    top_documents: topDocumentsResult.data ?? [],
+    top_matieres: topMatieresResult.data ?? [],
+  };
+}
+
+export async function getStatistiquesParRegion(): Promise<unknown[]> {
+  const { data, error } = await supabaseAdmin
+    .from('universites')
+    .select('region, id, statut')
+    .eq('statut', 'approuvee');
+
+  if (error) throw new ValidationError(error.message);
+
+  // Agréger par région côté application (materialized view par région optionnelle)
+  const regionMap = new Map<string, { region: string; nb_universites: number }>();
+  for (const row of data ?? []) {
+    const region = (row as { region: string | null }).region ?? 'Non renseignée';
+    const existing = regionMap.get(region);
+    if (existing) {
+      existing.nb_universites++;
+    } else {
+      regionMap.set(region, { region, nb_universites: 1 });
+    }
+  }
+
+  return Array.from(regionMap.values()).sort((a, b) => b.nb_universites - a.nb_universites);
+}
+
 // ── Signalements ──────────────────────────────────────────────────────────────
 
 export async function listSignalements(params: {

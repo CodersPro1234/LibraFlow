@@ -50,6 +50,15 @@ router.get('/universites/:id/dossier', asyncHandler(minController.getUniversiteD
 /** GET /api/v1/ministere/statistiques */
 router.get('/statistiques', asyncHandler(minController.getStatistiques));
 
+/** GET /api/v1/ministere/carte */
+router.get('/carte', asyncHandler(minController.getCarte));
+
+/** GET /api/v1/ministere/statistiques-nationales/region — doit être avant /:id */
+router.get('/statistiques-nationales/region', asyncHandler(minController.getStatistiquesParRegion));
+
+/** GET /api/v1/ministere/statistiques-nationales */
+router.get('/statistiques-nationales', asyncHandler(minController.getStatistiquesNationales));
+
 /** GET /api/v1/ministere/signalements */
 router.get('/signalements', asyncHandler(minController.listSignalements));
 
