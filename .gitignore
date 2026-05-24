@@ -10,7 +10,8 @@ venv/
 .idea/
 *.swp
 *.swo
-
+#textemplate
+init.txt
 # OS
 .DS_Store
 Thumbs.db
