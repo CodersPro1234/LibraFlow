@@ -27,3 +27,12 @@ pip install -r requirements.txt
 ## Développement
 
 Voir les README.md respectifs dans chaque dossier.
+
+## gemini_usage
+Quotas Gemini 2.0 Flash (free tier) :
+- 15 requêtes/minute
+- 1500 requêtes/jour
+- Clé API : dans .env (GEMINI_API_KEY)
+
+## password
+coderspro@26
